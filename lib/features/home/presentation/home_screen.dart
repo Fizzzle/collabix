@@ -1,5 +1,5 @@
 import 'package:collabix/core/constants/app_colors.dart';
-import 'package:collabix/features/chat/presentation/chat_screen.dart';
+import 'package:collabix/features/conversation/presentation/conversation_screen.dart';
 import 'package:collabix/features/home/widgets/name_and_logo_widget.dart';
 import 'package:collabix/features/home/widgets/profile_widget.dart';
 import 'package:collabix/features/home/widgets/user_chat_info_widget.dart';
@@ -105,7 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => const ChatScreen(),
+                          pageBuilder: (_, __, ___) => ConversationScreen(
+                            conversationTitle:
+                                chatInfo[index]['title'] as String,
+                          ),
                           transitionsBuilder: (_, animation, __, child) {
                             return FadeTransition(
                               opacity: animation,
