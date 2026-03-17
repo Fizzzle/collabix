@@ -3,6 +3,7 @@ import 'package:collabix/core/constants/app_const.dart';
 import 'package:collabix/features/conversation/screens/chat/chat_screen.dart';
 import 'package:collabix/features/conversation/screens/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Chat screen
 class ConversationScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
           /// Custom tab bar
           Positioned(
-            top: 16,
+            top: 16.h,
             left: 0,
             right: 0,
             child: _CustomTabBar(
@@ -94,11 +95,11 @@ class _CustomTabBar extends StatelessWidget {
 
     return Center(
       child: Container(
-        width: 192,
-        height: 45,
-        decoration: const BoxDecoration(
-          color: Color(0xFF18181B),
-          borderRadius: BorderRadius.all(Radius.circular(22)),
+        width: 192.w,
+        height: 45.h,
+        decoration: BoxDecoration(
+          color: const Color(0xFF18181B),
+          borderRadius: BorderRadius.all(Radius.circular(22.r)),
         ),
         child: Row(
           children: List.generate(2, (index) {
@@ -109,12 +110,12 @@ class _CustomTabBar extends StatelessWidget {
                 onTap: () => onTabChanged(index),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.all(4),
+                  margin: EdgeInsets.all(4.w),
                   decoration: BoxDecoration(
                     color: isActive
                         ? AppColors.borderColor
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(22.r),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -125,7 +126,7 @@ class _CustomTabBar extends StatelessWidget {
                                 ? AppColors.chatText
                                 : AppColors.boardText)
                           : Colors.grey,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'SpaceGrot',
                     ),
@@ -155,26 +156,26 @@ class _CustomAppBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircleAvatar(
-            radius: 15.6,
+            radius: 15.6.r,
             backgroundColor: AppColors.boardText,
             child: Center(
               child: Text(
                 conversationTitle[0].toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.background,
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'SpaceGrot',
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Text(
             conversationTitle,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.text,
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               fontFamily: 'SpaceGrot',
             ),

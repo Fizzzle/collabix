@@ -1,5 +1,6 @@
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Chat screen
 class ChatScreen extends StatelessWidget {
@@ -22,30 +23,30 @@ class ChatScreen extends StatelessWidget {
           color: AppColors.background,
           child: ListView(
             controller: scrollController,
-            children: const [
-              SizedBox(height: 10),
+            children: [
+              SizedBox(height: 10.h),
 
               /// Handle
               Center(
                 child: SizedBox(
-                  width: 40,
-                  child: Divider(
+                  width: 40.w,
+                  child: const Divider(
                     thickness: 4,
                     color: Colors.red,
                   ),
                 ),
               ),
 
-              SizedBox(height: 20),
+              SizedBox(height: 20.h),
 
-              Center(
+              const Center(
                 child: Text(
                   "Chat panel",
                   style: TextStyle(color: AppColors.text),
                 ),
               ),
 
-              SizedBox(height: 800),
+              SizedBox(height: 800.h),
             ],
           ),
         );

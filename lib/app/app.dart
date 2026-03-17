@@ -1,5 +1,6 @@
 import 'package:collabix/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Entry point of the application
 class App extends StatelessWidget {
@@ -8,9 +9,20 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+    return ScreenUtilInit(
+      designSize: const Size(412, 917),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (_, __) {
+        return MaterialApp(
+          title: 'Collabix',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            useMaterial3: true,
+          ),
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// User chat info widget
 class UserChatInfoWidget extends StatelessWidget {
@@ -31,43 +32,43 @@ class UserChatInfoWidget extends StatelessWidget {
       children: [
         ///Будут аватарки тех юзеров, с которыми идет чат
         Row(
-          spacing: 10,
+          spacing: 10.w,
           children: [
-            const CircleAvatar(
-              radius: 20,
-              backgroundImage: AssetImage('assets/images/ava.png'),
+            CircleAvatar(
+              radius: 20.r,
+              backgroundImage: const AssetImage('assets/images/ava.png'),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.text,
-                    fontSize: 20,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Row(
-                  spacing: 10,
+                  spacing: 10.w,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(3),
+                      padding: EdgeInsets.all(3.w),
                       decoration: BoxDecoration(
                         color: category == 'Board'
                             ? AppColors.boardText.withValues(alpha: 0.15)
                             : AppColors.chatText.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(4.r),
                       ),
                       child: Row(
-                        spacing: 5,
+                        spacing: 5.w,
                         children: [
                           Icon(
                             category == 'Board' ? Icons.dashboard : Icons.chat,
                             color: category == 'Board'
                                 ? AppColors.boardText
                                 : AppColors.chatText,
-                            size: 15,
+                            size: 15.sp,
                           ),
                           Text(
                             category,
@@ -75,7 +76,7 @@ class UserChatInfoWidget extends StatelessWidget {
                               color: category == 'Board'
                                   ? AppColors.boardText
                                   : AppColors.chatText,
-                              fontSize: 15,
+                              fontSize: 15.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -84,9 +85,9 @@ class UserChatInfoWidget extends StatelessWidget {
                     ),
                     Text(
                       lastMessage,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.upcomingMessageText,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                       ),
                     ),
                   ],
@@ -99,9 +100,9 @@ class UserChatInfoWidget extends StatelessWidget {
           alignment: Alignment.topRight,
           child: Text(
             time,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.upcomingMessageText,
-              fontSize: 12,
+              fontSize: 12.sp,
             ),
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:collabix/features/home/widgets/name_and_logo_widget.dart';
 import 'package:collabix/features/home/widgets/profile_widget.dart';
 import 'package:collabix/features/home/widgets/user_chat_info_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Home screen
 class HomeScreen extends StatefulWidget {
@@ -196,17 +197,17 @@ class _FindSpacesWidget extends StatelessWidget {
             color: AppColors.boardText,
           ),
 
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         filled: true,
         fillColor: AppColors.backgroundItemColor,
         hintText: 'Search spaces...',
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.upcomingMessageText,
-          fontSize: 16,
+          fontSize: 16.sp,
         ),
 
         prefixIcon: const Icon(
@@ -225,7 +226,7 @@ class _AppBarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      spacing: 10,
+      spacing: 10.w,
       children: [
         const NameAndLogoWidget(),
         ProfileWidget(
