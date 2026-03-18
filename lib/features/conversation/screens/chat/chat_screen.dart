@@ -14,39 +14,129 @@ class ChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
+    final inputHeight = 60.h;
+    final inputBottomOffset = 12.h;
+    final inputSidePadding = 10.w;
+    final inputBlockHeight = inputBottomOffset + inputHeight + bottomSafeArea;
+
     return DraggableScrollableSheet(
       controller: _draggableScrollableController,
-      initialChildSize: 1,
-      minChildSize: 0,
+      initialChildSize: 0.6,
+      minChildSize: 0.2,
       builder: (_, scrollController) {
         return ColoredBox(
-          color: AppColors.background,
-          child: ListView(
-            controller: scrollController,
+          color: AppColors.borderColor,
+          child: Stack(
             children: [
-              SizedBox(height: 10.h),
+              /// MESSAGES
+              ListView(
+                controller: scrollController,
+                padding: EdgeInsets.only(
+                  bottom: inputBlockHeight + 12.h,
+                ),
+                children: [
+                  SizedBox(height: 10.h),
 
-              /// Handle
-              Center(
-                child: SizedBox(
-                  width: 40.w,
-                  child: const Divider(
-                    thickness: 4,
-                    color: Colors.red,
+                  /// DRAG HANDLE
+                  Center(
+                    child: Container(
+                      width: 40.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 10.h),
+                ],
+              ),
+
+              /// FADE (сообщения под input приглушены как в TG)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: inputBlockHeight + 24.h,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          AppColors.background.withValues(alpha: 0.95),
+                          AppColors.background.withValues(alpha: 0.75),
+                          AppColors.background.withValues(alpha: 0.35),
+                          AppColors.background.withValues(alpha: 0.0),
+                        ],
+                        stops: const [0.0, 0.35, 0.7, 1.0],
+                      ),
+                    ),
                   ),
                 ),
               ),
 
-              SizedBox(height: 20.h),
+              /// INPUT (поверх)
+              Positioned(
+                left: inputSidePadding,
+                right: inputSidePadding,
+                bottom: inputBottomOffset,
+                child: Container(
+                  height: inputHeight,
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundItemColor,
+                    borderRadius: BorderRadius.circular(24.r),
+                    border: Border.all(
+                      color: AppColors.borderColor,
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(width: 12.w),
 
-              const Center(
-                child: Text(
-                  "Chat panel",
-                  style: TextStyle(color: AppColors.text),
+                      Icon(
+                        Icons.message,
+                        color: AppColors.upcomingMessageText,
+                        size: 20.sp,
+                      ),
+
+                      SizedBox(width: 8.w),
+
+                      /// TEXT FIELD
+                      Expanded(
+                        child: TextFormField(
+                          style: TextStyle(
+                            color: AppColors.text,
+                            fontSize: 16.sp,
+                          ),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Message',
+                            hintStyle: TextStyle(
+                              color: AppColors.upcomingMessageText,
+                              fontSize: 16.sp,
+                            ),
+                            isCollapsed: true,
+                          ),
+                        ),
+                      ),
+
+                      IconButton(
+                        onPressed: () => FocusScope.of(context).unfocus(),
+                        icon: Icon(
+                          Icons.send,
+                          color: AppColors.upcomingMessageText,
+                          size: 20.sp,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-
-              SizedBox(height: 800.h),
             ],
           ),
         );
