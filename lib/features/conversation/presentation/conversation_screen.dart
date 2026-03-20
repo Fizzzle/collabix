@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/core/constants/app_const.dart';
 import 'package:collabix/features/conversation/screens/chat/chat_screen.dart';
 import 'package:collabix/features/conversation/screens/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 
 /// Chat screen
 class ConversationScreen extends StatefulWidget {
@@ -54,9 +56,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       body: Stack(
         children: [
           ///  BOARD НА ФОНЕ
-          const Positioned.fill(
-            child: DashboardScreen(),
-          ),
+          const Positioned.fill(child: DashboardScreen()),
 
           /// CHAT PANEL
           ChatScreen(
@@ -79,15 +79,98 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 }
 
-/// CUSTOM TAB BAR
-class _CustomTabBar extends StatelessWidget {
+class _CustomTabBar extends StatefulWidget {
   final int activeIndex;
   final Function(int) onTabChanged;
 
-  const _CustomTabBar({
-    required this.activeIndex,
-    required this.onTabChanged,
-  });
+  const _CustomTabBar({required this.activeIndex, required this.onTabChanged});
+
+  @override
+  State<_CustomTabBar> createState() => _CustomTabBarState();
+}
+
+class _CustomTabBarState extends State<_CustomTabBar>
+    with TickerProviderStateMixin {
+  late AnimationController _chatController;
+  late AnimationController _boardController;
+  Timer? _boardRepeatTimer;
+  bool _chatLoaded = false;
+  bool _boardLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatController = AnimationController(vsync: this);
+    _boardController = AnimationController(vsync: this);
+  }
+
+  @override
+  void didUpdateWidget(_CustomTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeIndex != widget.activeIndex) {
+      _cancelBoardTimer();
+      _cancelChatTimer();
+      _playActiveAnimation(widget.activeIndex);
+    }
+  }
+
+  void _playActiveAnimation(int index) {
+    if (index == 0) {
+      if (!_chatLoaded) return;
+      _chatController.reset();
+      _chatController.forward();
+      _scheduleChatRepeat();
+    } else {
+      if (!_boardLoaded) return;
+      _boardController.reset();
+      _boardController.forward();
+      _scheduleBoardRepeat();
+    }
+  }
+
+  Timer? _chatRepeatTimer;
+
+  void _scheduleChatRepeat() {
+    _cancelChatTimer();
+    _chatRepeatTimer = Timer(const Duration(seconds: 5), () {
+      if (widget.activeIndex == 0 && mounted) {
+        _chatController.reset();
+        _chatController.forward();
+        _scheduleChatRepeat();
+      }
+    });
+  }
+
+  void _cancelChatTimer() {
+    _chatRepeatTimer?.cancel();
+    _chatRepeatTimer = null;
+  }
+
+  void _scheduleBoardRepeat() {
+    _cancelBoardTimer();
+    _boardRepeatTimer = Timer(const Duration(seconds: 5), () {
+      if (widget.activeIndex == 1 && mounted) {
+        _boardController.reset();
+        _boardController.forward();
+        _scheduleBoardRepeat();
+      }
+    });
+  }
+
+  void _cancelBoardTimer() {
+    _boardRepeatTimer?.cancel();
+    _boardRepeatTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _cancelBoardTimer();
+    _cancelChatTimer();
+
+    _chatController.dispose();
+    _boardController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,11 +186,16 @@ class _CustomTabBar extends StatelessWidget {
         ),
         child: Row(
           children: List.generate(2, (index) {
-            final isActive = activeIndex == index;
+            final isActive = widget.activeIndex == index;
+            final color = index == 0 ? AppColors.chatText : AppColors.boardText;
+            final asset = index == 0
+                ? 'assets/anim/icons/chat_icons.json'
+                : 'assets/anim/icons/board_icons.json';
+            final controller = index == 0 ? _chatController : _boardController;
 
             return Expanded(
               child: GestureDetector(
-                onTap: () => onTabChanged(index),
+                onTap: () => widget.onTabChanged(index),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   margin: EdgeInsets.all(4.w),
@@ -118,18 +206,52 @@ class _CustomTabBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(22.r),
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    titles[index],
-                    style: TextStyle(
-                      color: isActive
-                          ? (index == 0
-                                ? AppColors.chatText
-                                : AppColors.boardText)
-                          : Colors.grey,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'SpaceGrot',
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (isActive) ...[
+                        ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [color, color],
+                          ).createShader(bounds),
+                          blendMode: BlendMode.srcIn,
+                          child: Lottie.asset(
+                            asset,
+                            controller: controller,
+                            onLoaded: (composition) {
+                              controller.duration = composition.duration;
+                              if (index == 0) {
+                                _chatLoaded = true;
+                                if (widget.activeIndex == 0) {
+                                  controller.reset();
+                                  controller.forward();
+                                }
+                              } else {
+                                _boardLoaded = true;
+                                if (widget.activeIndex == 1) {
+                                  controller.reset();
+                                  controller.forward();
+                                  _scheduleBoardRepeat();
+                                }
+                              }
+                            },
+                            width: 20.w,
+                            height: 20.h,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                      ],
+                      Text(
+                        titles[index],
+                        style: TextStyle(
+                          color: isActive ? color : Colors.grey,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'SpaceGrot',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -141,7 +263,6 @@ class _CustomTabBar extends StatelessWidget {
   }
 }
 
-/// CUSTOM APP BAR
 class _CustomAppBar extends StatelessWidget {
   final String conversationTitle;
 

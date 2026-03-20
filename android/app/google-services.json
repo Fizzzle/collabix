@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "730144185812",
+    "project_id": "collabix-59791",
+    "storage_bucket": "collabix-59791.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:730144185812:android:cec862ea358b5ccf5fca41",
+        "android_client_info": {
+          "package_name": "com.chatboard.collabix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFAhUK_gpVhNoH2lk4Wh4dYwE3IPxMZbE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

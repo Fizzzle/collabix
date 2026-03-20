@@ -1,9 +1,10 @@
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 
 /// Chat screen
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   /// Constructor
   const ChatScreen({
     required DraggableScrollableController draggableScrollableController,
@@ -11,6 +12,33 @@ class ChatScreen extends StatelessWidget {
   }) : _draggableScrollableController = draggableScrollableController;
 
   final DraggableScrollableController _draggableScrollableController;
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+  }
+
+  void _startAnimationLoop() async {
+    while (mounted) {
+      await _controller.forward(from: 0.0);
+      await Future.delayed(const Duration(seconds: 3));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +49,7 @@ class ChatScreen extends StatelessWidget {
     final inputBlockHeight = inputBottomOffset + inputHeight + bottomSafeArea;
 
     return DraggableScrollableSheet(
-      controller: _draggableScrollableController,
+      controller: widget._draggableScrollableController,
       initialChildSize: 0.6,
       minChildSize: 0.2,
       builder: (_, scrollController) {
@@ -32,22 +60,30 @@ class ChatScreen extends StatelessWidget {
               /// MESSAGES
               ListView(
                 controller: scrollController,
-                padding: EdgeInsets.only(
-                  bottom: inputBlockHeight + 12.h,
-                ),
+                padding: EdgeInsets.only(bottom: inputBlockHeight + 12.h),
                 children: [
                   SizedBox(height: 10.h),
 
                   /// DRAG HANDLE
                   Center(
-                    child: Container(
-                      width: 40.w,
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                    child: Lottie.asset(
+                      'assets/anim/icons/drawer_up.json',
+                      controller: _controller,
+                      width: 80.w,
+                      height: 8.w,
+                      onLoaded: (composition) {
+                        _controller.duration = composition.duration;
+                        _startAnimationLoop();
+                      },
                     ),
+                    // Container(
+                    //   width: 40.w,
+                    //   height: 4.h,
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.grey,
+                    //     borderRadius: BorderRadius.circular(10),
+                    //   ),
+                    // ),
                   ),
 
                   SizedBox(height: 10.h),
@@ -89,10 +125,7 @@ class ChatScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.backgroundItemColor,
                     borderRadius: BorderRadius.circular(24.r),
-                    border: Border.all(
-                      color: AppColors.borderColor,
-                      width: 2,
-                    ),
+                    border: Border.all(color: AppColors.borderColor, width: 2),
                   ),
                   child: Row(
                     children: [
