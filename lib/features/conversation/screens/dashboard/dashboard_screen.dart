@@ -760,7 +760,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               vertical: 3 * _boardScale,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.white.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(
                                 20 * _boardScale,
                               ),
