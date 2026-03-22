@@ -52,57 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
             LogBottomRightBlurWidget(),
 
             /// MAIN CONTENT
-            SizedBox(
-              height: double.infinity,
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 70.0,
-                  left: 24.0,
-                  right: 24.0,
-                ),
-                child: Column(
-                  spacing: 40.h,
-                  children: [
-                    _TopInfoWidget(),
-                    Column(
-                      spacing: 16.h,
-                      children: [
-                        ...List.generate(
-                          textFormFieldData.length,
-                          (index) => _TextFormFieldWidget(
-                            hintText: textFormFieldData[index]['hintText'],
-                            prefixIcon: textFormFieldData[index]['prefixIcon'],
-                            controller: textFormFieldData[index]['controller'],
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                //TODO: Implement forgot password logic
-                                debugPrint('Forgot Password? clicked');
-                              },
-                              child: Text(
-                                'Forgot Password?',
-                                style: TextStyle(
-                                  color: AppColors.upcomingMessageText,
-                                  fontSize: 14.sp,
-                                  fontFamily: 'SpaceGrot',
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    _BottomLoginWidget(),
-                  ],
-                ),
-              ),
-            ),
+            _MainContent(textFormFieldData: textFormFieldData),
 
             Positioned(
               bottom: 24.h,
@@ -160,6 +110,63 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+}
+
+class _MainContent extends StatelessWidget {
+  const _MainContent({required this.textFormFieldData});
+
+  final List<Map<String, dynamic>> textFormFieldData;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: double.infinity,
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 70.0, left: 24.0, right: 24.0),
+        child: Column(
+          spacing: 40.h,
+          children: [
+            _TopInfoWidget(),
+            Column(
+              spacing: 16.h,
+              children: [
+                ...List.generate(
+                  textFormFieldData.length,
+                  (index) => _TextFormFieldWidget(
+                    hintText: textFormFieldData[index]['hintText'],
+                    prefixIcon: textFormFieldData[index]['prefixIcon'],
+                    controller: textFormFieldData[index]['controller'],
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        //TODO: Implement forgot password logic
+                        debugPrint('Forgot Password? clicked');
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: AppColors.upcomingMessageText,
+                          fontSize: 14.sp,
+                          fontFamily: 'SpaceGrot',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            _BottomLoginWidget(),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -89,15 +89,13 @@ class _HomeScreenState extends State<HomeScreen> {
           FocusManager.instance.primaryFocus?.unfocus();
         },
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(15.0, 51.0, 15.0, 8.0),
+          padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 20.0),
           child: SingleChildScrollView(
             child: Column(
               spacing: 28,
               children: [
                 const _AppBarWidget(),
-                _FindSpacesWidget(
-                  searchController: searchController,
-                ),
+                _FindSpacesWidget(searchController: searchController),
                 ...List.generate(
                   chatInfo.length,
                   (index) => _DiscussionWidget(
@@ -148,10 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
 class _DiscussionWidget extends StatelessWidget {
   final Map<String, dynamic> chatInfo;
   final VoidCallback? onTap;
-  const _DiscussionWidget({
-    required this.onTap,
-    required this.chatInfo,
-  });
+  const _DiscussionWidget({required this.onTap, required this.chatInfo});
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +155,7 @@ class _DiscussionWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         width: double.infinity,
-        height: 80,
+        height: 85.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: AppColors.backgroundItemColor,
@@ -180,28 +175,20 @@ class _DiscussionWidget extends StatelessWidget {
 class _FindSpacesWidget extends StatelessWidget {
   final TextEditingController searchController;
 
-  const _FindSpacesWidget({
-    required this.searchController,
-  });
+  const _FindSpacesWidget({required this.searchController});
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      style: const TextStyle(
-        color: AppColors.text,
-      ),
+      style: const TextStyle(color: AppColors.text),
       controller: searchController,
       decoration: InputDecoration(
         focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(
-            color: AppColors.boardText,
-          ),
+          borderSide: const BorderSide(color: AppColors.boardText),
 
           borderRadius: BorderRadius.circular(16.r),
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r)),
         filled: true,
         fillColor: AppColors.backgroundItemColor,
         hintText: 'Search spaces...',
@@ -210,10 +197,7 @@ class _FindSpacesWidget extends StatelessWidget {
           fontSize: 16.sp,
         ),
 
-        prefixIcon: const Icon(
-          Icons.search,
-          color: AppColors.boardText,
-        ),
+        prefixIcon: const Icon(Icons.search, color: AppColors.boardText),
       ),
     );
   }

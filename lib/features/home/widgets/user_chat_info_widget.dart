@@ -39,6 +39,7 @@ class UserChatInfoWidget extends StatelessWidget {
               backgroundImage: const AssetImage('assets/images/ava.png'),
             ),
             Column(
+              spacing: 5.h,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -53,7 +54,7 @@ class UserChatInfoWidget extends StatelessWidget {
                   spacing: 10.w,
                   children: [
                     Container(
-                      padding: EdgeInsets.all(3.w),
+                      padding: EdgeInsets.all(4.w),
                       decoration: BoxDecoration(
                         color: category == 'Board'
                             ? AppColors.boardText.withValues(alpha: 0.15)
@@ -68,7 +69,7 @@ class UserChatInfoWidget extends StatelessWidget {
                             color: category == 'Board'
                                 ? AppColors.boardText
                                 : AppColors.chatText,
-                            size: 15.sp,
+                            size: 13.sp,
                           ),
                           Text(
                             category,
@@ -76,7 +77,7 @@ class UserChatInfoWidget extends StatelessWidget {
                               color: category == 'Board'
                                   ? AppColors.boardText
                                   : AppColors.chatText,
-                              fontSize: 15.sp,
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

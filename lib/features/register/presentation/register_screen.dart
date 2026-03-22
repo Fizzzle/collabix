@@ -65,39 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               /// Bottom right blur widget
               RegBottomRightBlurWidget(),
 
-              SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: 70.0.h,
-                    left: 24.0.w,
-                    right: 24.0.w,
-                  ),
-                  child: Column(
-                    spacing: 40.h,
-                    children: [
-                      _TopInfoWidget(),
-                      Column(
-                        spacing: 16.h,
-                        children: [
-                          ...List.generate(
-                            textFormFieldData.length,
-                            (index) => _TextFormFieldWidget(
-                              hintText: textFormFieldData[index]['hintText'],
-                              prefixIcon:
-                                  textFormFieldData[index]['prefixIcon'],
-                              controller:
-                                  textFormFieldData[index]['controller'],
-                            ),
-                          ),
-                        ],
-                      ),
-                      _BottomRegisterWidget(),
-                      const SizedBox(height: 0),
-                    ],
-                  ),
-                ),
-              ),
+              _MainContent(textFormFieldData: textFormFieldData),
             ],
           ),
         ),
@@ -112,6 +80,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+}
+
+class _MainContent extends StatelessWidget {
+  const _MainContent({required this.textFormFieldData});
+
+  final List<Map<String, dynamic>> textFormFieldData;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.only(top: 70.0.h, left: 24.0.w, right: 24.0.w),
+        child: Column(
+          spacing: 40.h,
+          children: [
+            _TopInfoWidget(),
+            Column(
+              spacing: 16.h,
+              children: [
+                ...List.generate(
+                  textFormFieldData.length,
+                  (index) => _TextFormFieldWidget(
+                    hintText: textFormFieldData[index]['hintText'],
+                    prefixIcon: textFormFieldData[index]['prefixIcon'],
+                    controller: textFormFieldData[index]['controller'],
+                  ),
+                ),
+              ],
+            ),
+            _BottomRegisterWidget(),
+            const SizedBox(height: 0),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -139,7 +144,7 @@ class _BottomRegisterWidgetState extends State<_BottomRegisterWidget> {
               onTap: () => setState(() => isChecked = !isChecked),
               child: Container(
                 width: 25.w,
-                height: 27.h,
+                height: 2.h,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(6.r),
                   border: Border.all(color: Colors.grey),
