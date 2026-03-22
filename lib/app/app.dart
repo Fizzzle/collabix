@@ -1,4 +1,4 @@
-import 'package:collabix/features/home/presentation/home_screen.dart';
+import 'package:collabix/features/login/presentation/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -17,10 +17,8 @@ class App extends StatelessWidget {
         return MaterialApp(
           title: 'Collabix',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            useMaterial3: true,
-          ),
-          home: const HomeScreen(),
+          theme: ThemeData(useMaterial3: true),
+          home: const LoginScreen(),
         );
       },
     );
