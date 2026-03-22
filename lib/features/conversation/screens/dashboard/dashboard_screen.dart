@@ -742,6 +742,93 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ),
                     ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10 * _boardScale,
+                        vertical: 8 * _boardScale,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7 * _boardScale,
+                              vertical: 3 * _boardScale,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(
+                                20 * _boardScale,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  sticker.stickerColor == StickerColor.green
+                                      ? Icons.tungsten_outlined
+                                      : sticker.stickerColor ==
+                                            StickerColor.cyan
+                                      ? Icons.access_time_rounded
+                                      : Icons.check_circle_rounded,
+                                  size: 9 * _boardScale,
+                                  color:
+                                      sticker.stickerColor == StickerColor.green
+                                      ? const Color(0xFFFF5C5C)
+                                      : sticker.stickerColor ==
+                                            StickerColor.cyan
+                                      ? const Color(0xFFFFBB33)
+                                      : const Color(0xFF4CD964),
+                                ),
+                                SizedBox(width: 4 * _boardScale),
+                                Text(
+                                  sticker.stickerColor == StickerColor.green
+                                      ? 'TODO'
+                                      : sticker.stickerColor ==
+                                            StickerColor.cyan
+                                      ? 'IN PROGRESS'
+                                      : 'DONE',
+                                  style: TextStyle(
+                                    color: Colors.black.withOpacity(0.4),
+                                    fontSize: 9.sp * _boardScale,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'SpaceGrot',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: 18 * _boardScale,
+                            height: 18 * _boardScale,
+                            child: GridView.count(
+                              crossAxisCount: 3,
+                              physics: const NeverScrollableScrollPhysics(),
+                              mainAxisSpacing: 2.5 * _boardScale,
+                              crossAxisSpacing: 2.5 * _boardScale,
+                              children: List.generate(
+                                9,
+                                (_) => Center(
+                                  child: Container(
+                                    width: 3 * _boardScale,
+                                    height: 3 * _boardScale,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.45),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   Positioned.fill(
                     child: IgnorePointer(

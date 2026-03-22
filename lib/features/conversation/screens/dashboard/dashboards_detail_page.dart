@@ -2,12 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 import 'dashboard_screen.dart';
 
 class StickerDetailScreen extends StatefulWidget {
   final StickerModel sticker;
   final void Function(StickerModel) onUpdate;
-
   final void Function(String id, StickerColor newColor)? onColorChange;
 
   const StickerDetailScreen({
@@ -58,19 +58,20 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
   StickerStatus get _status => widget.sticker.stickerColor.status;
 
   final List<String> _tags = [];
-
   final List<_ReactionModel> _reactions = [
     _ReactionModel(emoji: '👍', count: 3),
     _ReactionModel(emoji: '🔥', count: 1),
   ];
-
   final List<_CommentModel> _comments = [];
 
   late AnimationController _slideCtrl;
   late Animation<Offset> _slideAnim;
 
-  late DateTime _createdAt;
+  late AnimationController _lottieCtrlTodo;
+  late AnimationController _lottieCtrlProgress;
+  late AnimationController _lottieCtrlDone;
 
+  late DateTime _createdAt;
   bool _tagEditMode = false;
 
   @override
@@ -90,6 +91,15 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
     _slideCtrl.forward();
+
+    const dur = Duration(milliseconds: 800);
+    _lottieCtrlTodo = AnimationController(vsync: this, duration: dur);
+    _lottieCtrlProgress = AnimationController(vsync: this, duration: dur);
+    _lottieCtrlDone = AnimationController(vsync: this, duration: dur);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controllerFor(_status).value = 1.0;
+    });
   }
 
   @override
@@ -98,7 +108,21 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
     _commentCtrl.dispose();
     _tagCtrl.dispose();
     _slideCtrl.dispose();
+    _lottieCtrlTodo.dispose();
+    _lottieCtrlProgress.dispose();
+    _lottieCtrlDone.dispose();
     super.dispose();
+  }
+
+  AnimationController _controllerFor(StickerStatus s) {
+    switch (s) {
+      case StickerStatus.todo:
+        return _lottieCtrlTodo;
+      case StickerStatus.inProgress:
+        return _lottieCtrlProgress;
+      case StickerStatus.done:
+        return _lottieCtrlDone;
+    }
   }
 
   Color get _statusColor {
@@ -113,11 +137,16 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
   }
 
   void _setStatus(StickerStatus s) {
-    final newColor = s.color;
-    widget.onColorChange?.call(widget.sticker.id, newColor);
-    setState(() {
-      widget.sticker.stickerColor = newColor;
-    });
+    if (_status == s) return;
+    HapticFeedback.lightImpact();
+
+    _controllerFor(_status).reverse();
+    _controllerFor(s)
+      ..reset()
+      ..forward();
+
+    widget.onColorChange?.call(widget.sticker.id, s.color);
+    setState(() => widget.sticker.stickerColor = s.color);
     widget.onUpdate(widget.sticker);
   }
 
@@ -294,23 +323,7 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
               ),
             ),
           ),
-          // GestureDetector(
-          //   onTap: () {},
-          //   child: Container(
-          //     width: 40.w,
-          //     height: 40.h,
-          //     decoration: BoxDecoration(
-          //       color: DashBoardColor.surface,
-          //       borderRadius: BorderRadius.circular(12.r),
-          //       border: Border.all(color: DashBoardColor.border),
-          //     ),
-          //     child: Icon(
-          //       Icons.more_horiz_rounded,
-          //       size: 18.sp,
-          //       color: DashBoardColor.textMuted,
-          //     ),
-          //   ),
-          // ),
+          SizedBox(width: 40.w),
         ],
       ),
     );
@@ -318,9 +331,27 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
 
   Widget _buildStatusRow() {
     final statuses = [
-      (StickerStatus.todo, 'TO DO', Icons.radio_button_unchecked_rounded),
-      (StickerStatus.inProgress, 'IN PROGRESS', Icons.timelapse_rounded),
-      (StickerStatus.done, 'DONE', Icons.check_circle_outline_rounded),
+      (
+        StickerStatus.todo,
+        'TO DO',
+        Icons.radio_button_unchecked_rounded,
+        DashBoardColor.stickerGreen,
+        _lottieCtrlTodo,
+      ),
+      (
+        StickerStatus.inProgress,
+        'IN PROGRESS',
+        Icons.timelapse_rounded,
+        DashBoardColor.stickerCyan,
+        _lottieCtrlProgress,
+      ),
+      (
+        StickerStatus.done,
+        'DONE',
+        Icons.check_circle_outline_rounded,
+        DashBoardColor.stickerPurple,
+        _lottieCtrlDone,
+      ),
     ];
 
     return Column(
@@ -329,64 +360,21 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
         _sectionLabel('STATUS'),
         SizedBox(height: 10.h),
         Row(
-          children: statuses.map((s) {
-            final isActive = _status == s.$1;
-            final color = s.$1 == StickerStatus.todo
-                ? DashBoardColor.stickerGreen
-                : s.$1 == StickerStatus.inProgress
-                ? DashBoardColor.stickerCyan
-                : DashBoardColor.stickerPurple;
-
+          children: statuses.asMap().entries.map((entry) {
+            final i = entry.key;
+            final s = entry.value;
             return Expanded(
-              child: GestureDetector(
-                onTap: () => _setStatus(s.$1),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: EdgeInsets.only(
-                    right: s.$1 != StickerStatus.done ? 8.w : 0,
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  decoration: BoxDecoration(
-                    color: isActive ? color : DashBoardColor.surface,
-                    borderRadius: BorderRadius.circular(14.r),
-                    border: Border.all(
-                      color: isActive ? color : DashBoardColor.border,
-                      width: isActive ? 0 : 1,
-                    ),
-                    boxShadow: isActive
-                        ? [
-                            BoxShadow(
-                              color: color.withOpacity(0.35),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        s.$3,
-                        size: 18.sp,
-                        color: isActive
-                            ? Colors.black.withOpacity(0.7)
-                            : DashBoardColor.textMuted,
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        s.$2,
-                        style: TextStyle(
-                          color: isActive
-                              ? Colors.black.withOpacity(0.7)
-                              : DashBoardColor.textMuted,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'SpaceGrot',
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: i < statuses.length - 1 ? 8.w : 0,
+                ),
+                child: _StatusButton(
+                  isActive: _status == s.$1,
+                  color: s.$4,
+                  icon: s.$3,
+                  label: s.$2,
+                  lottieCtrl: s.$5,
+                  onTap: () => _setStatus(s.$1),
                 ),
               ),
             );
@@ -888,18 +876,16 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
     );
   }
 
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: DashBoardColor.textMuted,
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w700,
-        fontFamily: 'SpaceGrot',
-        letterSpacing: 1.2,
-      ),
-    );
-  }
+  Widget _sectionLabel(String text) => Text(
+    text,
+    style: TextStyle(
+      color: DashBoardColor.textMuted,
+      fontSize: 11.sp,
+      fontWeight: FontWeight.w700,
+      fontFamily: 'SpaceGrot',
+      letterSpacing: 1.2,
+    ),
+  );
 
   void _showAddTagDialog() {
     showModalBottomSheet(
@@ -1063,12 +1049,113 @@ class _StickerDetailScreenState extends State<StickerDetailScreen>
   }
 
   String _formatTime(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
+    final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'just now';
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+class _StatusButton extends StatelessWidget {
+  final bool isActive;
+  final Color color;
+  final IconData icon;
+  final String label;
+  final AnimationController lottieCtrl;
+  final VoidCallback onTap;
+
+  const _StatusButton({
+    required this.isActive,
+    required this.color,
+    required this.icon,
+    required this.label,
+    required this.lottieCtrl,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        height: 68.h,
+        decoration: BoxDecoration(
+          color: DashBoardColor.surface,
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(
+            color: isActive ? color : DashBoardColor.border,
+            width: 1.5,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.32),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(13.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              AnimatedBuilder(
+                animation: lottieCtrl,
+                builder: (_, child) => Opacity(
+                  opacity: lottieCtrl.value.clamp(0.0, 1.0),
+                  child: child,
+                ),
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [color.withOpacity(0.65), color],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Lottie.asset(
+                    'assets/anim/buttons/idaidea.json',
+                    controller: lottieCtrl,
+                    onLoaded: (comp) => lottieCtrl.duration = comp.duration,
+                    fit: BoxFit.fill,
+                  ),
+                ),
+              ),
+
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 18.sp,
+                      color: isActive ? Colors.white : DashBoardColor.textMuted,
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: isActive
+                            ? Colors.white
+                            : DashBoardColor.textMuted,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'SpaceGrot',
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
