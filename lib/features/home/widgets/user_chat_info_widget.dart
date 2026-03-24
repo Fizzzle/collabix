@@ -92,12 +92,12 @@ class UserChatInfoWidget extends StatelessWidget {
                     category == 'Board'
                         ? Lottie.asset(
                             'assets/anim/board_menu_table.json',
-                            width: 60.w,
+                            width: 65.w,
                             height: 40.h,
                           )
                         : Lottie.asset(
                             'assets/anim/chat_menu_table.json',
-                            width: 60.w,
+                            width: 65.w,
                             height: 40.h,
                           ),
 

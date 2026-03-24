@@ -1,6 +1,7 @@
 import 'package:collabix/core/auth/services/core_auth_service.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/core/firebase/firebase_service.dart';
+import 'package:collabix/features/home/presentation/home_screen.dart';
 import 'package:collabix/features/login/presentation/login_screen.dart';
 import 'package:collabix/features/register/data/repositories/register_repository_impl.dart';
 import 'package:collabix/features/register/data/services/register_remote_service.dart';
@@ -102,6 +103,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onPasswordChanged: _onPasswordChanged,
                 onConfirmPasswordChanged: _onConfirmPasswordChanged,
               ),
+              Positioned(
+                bottom: 10.h,
+                left: 0,
+                right: 0,
+                child: Row(
+                  spacing: 5.w,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Already have an account?',
+                      style: TextStyle(
+                        color: AppColors.upcomingMessageText,
+                        fontSize: 14.sp,
+                        fontFamily: 'SpaceGrot',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const LoginScreen(),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) => child,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Sign In',
+                        style: TextStyle(
+                          color: AppColors.chatText,
+                          fontSize: 14.sp,
+                          fontFamily: 'SpaceGrot',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -141,7 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const LoginScreen(),
+              const HomeScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               child,
         ),
@@ -282,7 +331,7 @@ class _MainContent extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: EdgeInsets.only(top: 70.0.h, left: 24.0.w, right: 24.0.w),
+        padding: EdgeInsets.only(top: 60.0.h, left: 24.0.w, right: 24.0.w),
         child: Column(
           spacing: 40.h,
           children: [
@@ -290,38 +339,36 @@ class _MainContent extends StatelessWidget {
             Column(
               spacing: 16.h,
               children: [
-                ...List.generate(
-                  textFormFieldData.length,
-                  (index) {
-                    final hintText = textFormFieldData[index]['hintText'] as String;
-                    String? errorText;
-                    ValueChanged<String>? onChanged;
-                    if (hintText == 'Full Name') {
-                      errorText = fullNameError;
-                      onChanged = onFullNameChanged;
-                    } else if (hintText == 'Email') {
-                      errorText = emailError;
-                      onChanged = onEmailChanged;
-                    } else if (hintText == 'Password') {
-                      errorText = passwordError;
-                      onChanged = onPasswordChanged;
-                    } else if (hintText == 'Confirm Password') {
-                      errorText = confirmPasswordError;
-                      onChanged = onConfirmPasswordChanged;
-                    }
+                ...List.generate(textFormFieldData.length, (index) {
+                  final hintText =
+                      textFormFieldData[index]['hintText'] as String;
+                  String? errorText;
+                  ValueChanged<String>? onChanged;
+                  if (hintText == 'Full Name') {
+                    errorText = fullNameError;
+                    onChanged = onFullNameChanged;
+                  } else if (hintText == 'Email') {
+                    errorText = emailError;
+                    onChanged = onEmailChanged;
+                  } else if (hintText == 'Password') {
+                    errorText = passwordError;
+                    onChanged = onPasswordChanged;
+                  } else if (hintText == 'Confirm Password') {
+                    errorText = confirmPasswordError;
+                    onChanged = onConfirmPasswordChanged;
+                  }
 
-                    return _TextFormFieldWidget(
-                      hintText: hintText,
-                      prefixIcon: textFormFieldData[index]['prefixIcon'],
-                      controller: textFormFieldData[index]['controller'],
-                      obscureText:
-                          textFormFieldData[index]['obscureText'] as bool? ??
-                          false,
-                      errorText: errorText,
-                      onChanged: onChanged,
-                    );
-                  },
-                ),
+                  return _TextFormFieldWidget(
+                    hintText: hintText,
+                    prefixIcon: textFormFieldData[index]['prefixIcon'],
+                    controller: textFormFieldData[index]['controller'],
+                    obscureText:
+                        textFormFieldData[index]['obscureText'] as bool? ??
+                        false,
+                    errorText: errorText,
+                    onChanged: onChanged,
+                  );
+                }),
               ],
             ),
             _BottomRegisterWidget(
@@ -512,7 +559,38 @@ class _BottomRegisterWidgetState extends State<_BottomRegisterWidget> {
             Expanded(
               child: SocialButtonWidget(
                 imagePath: 'assets/images/googleic.png',
-                onTap: () {},
+                onTap: () async {
+                  try {
+                    final user = await CoreAuthServiceImpl(
+                      FirebaseServiceImpl(),
+                    ).registerWithGoogle();
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (user != null) {
+                      await Navigator.pushReplacement(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (_, __, ___) => const HomeScreen(),
+                          transitionsBuilder: (_, __, ___, child) => child,
+                        ),
+                      );
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Google sign in was cancelled.'),
+                      ),
+                    );
+                  } catch (error) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Google sign in failed: $error')),
+                    );
+                  }
+                },
               ),
             ),
           ],

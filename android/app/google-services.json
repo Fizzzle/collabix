@@ -12,7 +12,20 @@
           "package_name": "com.chatboard.collabix"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "730144185812-4hobiak9mb9l4doq7anu825u42dh7e5p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chatboard.collabix",
+            "certificate_hash": "9364772bf56092a7bd953615702c54896a8b0e4e"
+          }
+        },
+        {
+          "client_id": "730144185812-u3s048rl1hes6bfrbol3bvd1s0npp991.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDFAhUK_gpVhNoH2lk4Wh4dYwE3IPxMZbE"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "730144185812-u3s048rl1hes6bfrbol3bvd1s0npp991.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "730144185812-a5bsmvopn24ujljneeq72rfontorfnie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.collabix"
+              }
+            }
+          ]
         }
       }
     }

@@ -1,5 +1,11 @@
+import 'package:collabix/core/auth/services/core_auth_service.dart';
 import 'package:collabix/core/constants/app_colors.dart';
+import 'package:collabix/core/firebase/firebase_service.dart';
 import 'package:collabix/features/home/presentation/home_screen.dart';
+import 'package:collabix/features/login/data/repositories/login_repository_impl.dart';
+import 'package:collabix/features/login/data/services/login_remote_service.dart';
+import 'package:collabix/features/login/domain/failures/login_failure.dart';
+import 'package:collabix/features/login/domain/services/login_service.dart';
 import 'package:collabix/features/login/widgets/log_bottom_right_blur_widget.dart';
 import 'package:collabix/features/login/widgets/log_second_bottom_right_blur_widget.dart';
 import 'package:collabix/features/login/widgets/log_top_left_blur_widget.dart';
@@ -18,6 +24,23 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  late final LoginService _loginService;
+  bool _isLoading = false;
+  String? _emailError;
+  String? _passwordError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loginService = LoginService(
+      LoginRepositoryImpl(
+        LoginRemoteServiceImpl(
+          CoreAuthServiceImpl(FirebaseServiceImpl()),
+          FirebaseServiceImpl(),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +75,15 @@ class _LoginScreenState extends State<LoginScreen> {
             LogBottomRightBlurWidget(),
 
             /// MAIN CONTENT
-            _MainContent(textFormFieldData: textFormFieldData),
+            _MainContent(
+              textFormFieldData: textFormFieldData,
+              onLoginTap: _onLoginTap,
+              isLoading: _isLoading,
+              emailError: _emailError,
+              passwordError: _passwordError,
+              onEmailChanged: _onEmailChanged,
+              onPasswordChanged: _onPasswordChanged,
+            ),
 
             Positioned(
               bottom: 24.h,
@@ -76,8 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       await Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const RegisterScreen(),
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const RegisterScreen(),
                           transitionsBuilder:
                               (context, animation, secondaryAnimation, child) =>
                                   child,
@@ -109,12 +141,118 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
+
+  Future<void> _onLoginTap() async {
+    if (_isLoading) {
+      return;
+    }
+    if (!_validateFields()) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _loginService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      if (!mounted) {
+        return;
+      }
+      await Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomeScreen(),
+          transitionsBuilder: (_, __, ___, child) => child,
+        ),
+      );
+    } on LoginFailure catch (error) {
+      if (mounted) {
+        _applyFailureToFields(error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unexpected login error.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  bool _validateFields() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    String? emailError;
+    String? passwordError;
+
+    if (email.isEmpty) {
+      emailError = 'Please enter your email.';
+    } else if (!email.contains('@')) {
+      emailError = 'Please enter a valid email.';
+    }
+
+    if (password.isEmpty) {
+      passwordError = 'Please enter your password.';
+    }
+
+    setState(() {
+      _emailError = emailError;
+      _passwordError = passwordError;
+    });
+
+    return emailError == null && passwordError == null;
+  }
+
+  void _applyFailureToFields(String message) {
+    setState(() {
+      if (message == 'Invalid email or password.' ||
+          message == 'Email format is invalid.') {
+        _emailError = message;
+        _passwordError = ' ';
+      } else if (message == 'Please enter your password.') {
+        _passwordError = message;
+      } else {
+        _emailError = message;
+      }
+    });
+  }
+
+  void _onEmailChanged(String _) {
+    if (_emailError != null) {
+      setState(() => _emailError = null);
+    }
+  }
+
+  void _onPasswordChanged(String _) {
+    if (_passwordError != null) {
+      setState(() => _passwordError = null);
+    }
+  }
 }
 
 class _MainContent extends StatelessWidget {
-  const _MainContent({required this.textFormFieldData});
+  const _MainContent({
+    required this.textFormFieldData,
+    required this.onLoginTap,
+    required this.isLoading,
+    required this.emailError,
+    required this.passwordError,
+    required this.onEmailChanged,
+    required this.onPasswordChanged,
+  });
 
   final List<Map<String, dynamic>> textFormFieldData;
+  final Future<void> Function() onLoginTap;
+  final bool isLoading;
+  final String? emailError;
+  final String? passwordError;
+  final ValueChanged<String> onEmailChanged;
+  final ValueChanged<String> onPasswordChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -132,11 +270,19 @@ class _MainContent extends StatelessWidget {
               children: [
                 ...List.generate(
                   textFormFieldData.length,
-                  (index) => _TextFormFieldWidget(
-                    hintText: textFormFieldData[index]['hintText'],
-                    prefixIcon: textFormFieldData[index]['prefixIcon'],
-                    controller: textFormFieldData[index]['controller'],
-                  ),
+                  (index) {
+                    final hintText = textFormFieldData[index]['hintText'];
+                    return _TextFormFieldWidget(
+                      hintText: hintText,
+                      prefixIcon: textFormFieldData[index]['prefixIcon'],
+                      controller: textFormFieldData[index]['controller'],
+                      obscureText: hintText == 'Password',
+                      errorText: hintText == 'Email' ? emailError : passwordError,
+                      onChanged: hintText == 'Email'
+                          ? onEmailChanged
+                          : onPasswordChanged,
+                    );
+                  },
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -160,7 +306,7 @@ class _MainContent extends StatelessWidget {
                 ),
               ],
             ),
-            _BottomLoginWidget(),
+            _BottomLoginWidget(onLoginTap: onLoginTap, isLoading: isLoading),
           ],
         ),
       ),
@@ -169,15 +315,19 @@ class _MainContent extends StatelessWidget {
 }
 
 class _BottomLoginWidget extends StatefulWidget {
-  const _BottomLoginWidget();
+  const _BottomLoginWidget({
+    required this.onLoginTap,
+    required this.isLoading,
+  });
+
+  final Future<void> Function() onLoginTap;
+  final bool isLoading;
 
   @override
   State<_BottomLoginWidget> createState() => _BottomLoginWidgetState();
 }
 
 class _BottomLoginWidgetState extends State<_BottomLoginWidget> {
-  bool isChecked = false;
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -186,18 +336,8 @@ class _BottomLoginWidgetState extends State<_BottomLoginWidget> {
 
         /// SIGN IN BUTTON
         GestureDetector(
-          onTap: () {
-            //TODO: Implement sign up logic
-
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    HomeScreen(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) => child,
-              ),
-            );
+          onTap: () async {
+            await widget.onLoginTap();
           },
           child: SizedBox(
             height: 70.h,
@@ -229,14 +369,23 @@ class _BottomLoginWidgetState extends State<_BottomLoginWidget> {
                     border: Border.all(color: Colors.black, width: 2),
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    'Sign In',
-                    style: TextStyle(
-                      color: AppColors.background,
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: widget.isLoading
+                      ? SizedBox(
+                          width: 26.w,
+                          height: 26.h,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.background,
+                          ),
+                        )
+                      : Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: AppColors.background,
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -268,7 +417,38 @@ class _BottomLoginWidgetState extends State<_BottomLoginWidget> {
             Expanded(
               child: SocialButtonWidget(
                 imagePath: 'assets/images/googleic.png',
-                onTap: () {},
+                onTap: () async {
+                  try {
+                    final user = await CoreAuthServiceImpl(
+                      FirebaseServiceImpl(),
+                    ).registerWithGoogle();
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (user != null) {
+                      await Navigator.pushReplacement(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (_, __, ___) => const HomeScreen(),
+                          transitionsBuilder: (_, __, ___, child) => child,
+                        ),
+                      );
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Google sign in was cancelled.'),
+                      ),
+                    );
+                  } catch (error) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Google sign in failed: $error')),
+                    );
+                  }
+                },
               ),
             ),
           ],
@@ -282,16 +462,24 @@ class _TextFormFieldWidget extends StatelessWidget {
   final String hintText;
   final IconData prefixIcon;
   final TextEditingController controller;
+  final bool obscureText;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
   const _TextFormFieldWidget({
     required this.hintText,
     required this.prefixIcon,
     required this.controller,
+    this.obscureText = false,
+    this.errorText,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      obscureText: obscureText,
+      onChanged: onChanged,
       cursorColor: AppColors.upcomingMessageText,
       style: TextStyle(
         fontSize: 18.sp,
@@ -316,6 +504,12 @@ class _TextFormFieldWidget extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: AppColors.boardText),
           borderRadius: BorderRadius.circular(20.r),
+        ),
+        errorText: errorText,
+        errorStyle: TextStyle(
+          fontSize: 12.sp,
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
