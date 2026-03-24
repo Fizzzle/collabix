@@ -1,5 +1,11 @@
+import 'package:collabix/core/auth/services/core_auth_service.dart';
 import 'package:collabix/core/constants/app_colors.dart';
+import 'package:collabix/core/firebase/firebase_service.dart';
 import 'package:collabix/features/login/presentation/login_screen.dart';
+import 'package:collabix/features/register/data/repositories/register_repository_impl.dart';
+import 'package:collabix/features/register/data/services/register_remote_service.dart';
+import 'package:collabix/features/register/domain/failures/register_failure.dart';
+import 'package:collabix/features/register/domain/services/register_service.dart';
 import 'package:collabix/features/register/widgets/reg_bottom_right_blur_widget.dart';
 import 'package:collabix/features/register/widgets/reg_second_bottom_right_blur_widget.dart';
 import 'package:collabix/features/register/widgets/reg_top_left_blur_widget.dart';
@@ -21,6 +27,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  late final RegisterService _registerService;
+  bool _isLoading = false;
+  String? _fullNameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+
+  @override
+  void initState() {
+    super.initState();
+    _registerService = RegisterService(
+      RegisterRepositoryImpl(
+        RegisterRemoteServiceImpl(CoreAuthServiceImpl(FirebaseServiceImpl())),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +62,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'hintText': 'Password',
         'prefixIcon': Icons.lock,
         'controller': _passwordController,
+        'obscureText': true,
       },
       {
         'hintText': 'Confirm Password',
         'prefixIcon': Icons.lock,
         'controller': _confirmPasswordController,
+        'obscureText': true,
       },
     ];
 
@@ -65,12 +89,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
               /// Bottom right blur widget
               RegBottomRightBlurWidget(),
 
-              _MainContent(textFormFieldData: textFormFieldData),
+              _MainContent(
+                textFormFieldData: textFormFieldData,
+                isLoading: _isLoading,
+                onRegisterTap: _onRegisterTap,
+                fullNameError: _fullNameError,
+                emailError: _emailError,
+                passwordError: _passwordError,
+                confirmPasswordError: _confirmPasswordError,
+                onFullNameChanged: _onFullNameChanged,
+                onEmailChanged: _onEmailChanged,
+                onPasswordChanged: _onPasswordChanged,
+                onConfirmPasswordChanged: _onConfirmPasswordChanged,
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _onRegisterTap(bool acceptedTerms) async {
+    if (_isLoading) {
+      return;
+    }
+    if (!_validateFields()) {
+      return;
+    }
+    if (!acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Accept terms to continue.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _registerService.register(
+        name: _fullNameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        confirmPassword: _confirmPasswordController.text,
+        acceptedTerms: acceptedTerms,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const LoginScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
+        ),
+      );
+    } on RegisterFailure catch (error) {
+      if (mounted) {
+        _applyFailureToFields(error.message);
+      }
+    } catch (_) {
+      debugPrint('Unexpected register error');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -81,12 +167,115 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
+  bool _validateFields() {
+    final fullName = _fullNameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    String? fullNameError;
+    String? emailError;
+    String? passwordError;
+    String? confirmPasswordError;
+
+    if (fullName.isEmpty) {
+      fullNameError = 'Please enter your full name.';
+    }
+
+    if (email.isEmpty) {
+      emailError = 'Please enter your email.';
+    } else if (!email.contains('@')) {
+      emailError = 'Please enter a valid email.';
+    }
+
+    if (password.length < 6) {
+      passwordError = 'Password must be at least 6 characters.';
+    }
+
+    if (confirmPassword != password) {
+      confirmPasswordError = 'Passwords do not match.';
+    }
+
+    setState(() {
+      _fullNameError = fullNameError;
+      _emailError = emailError;
+      _passwordError = passwordError;
+      _confirmPasswordError = confirmPasswordError;
+    });
+
+    return fullNameError == null &&
+        emailError == null &&
+        passwordError == null &&
+        confirmPasswordError == null;
+  }
+
+  void _applyFailureToFields(String message) {
+    setState(() {
+      if (message == 'This email is already in use.') {
+        _emailError = message;
+      } else if (message == 'Password is too weak.') {
+        _passwordError = message;
+      } else if (message == 'Email format is invalid.') {
+        _emailError = message;
+      }
+    });
+  }
+
+  void _onFullNameChanged(String _) {
+    if (_fullNameError != null) {
+      setState(() => _fullNameError = null);
+    }
+  }
+
+  void _onEmailChanged(String _) {
+    if (_emailError != null) {
+      setState(() => _emailError = null);
+    }
+  }
+
+  void _onPasswordChanged(String _) {
+    if (_passwordError != null || _confirmPasswordError != null) {
+      setState(() {
+        _passwordError = null;
+        _confirmPasswordError = null;
+      });
+    }
+  }
+
+  void _onConfirmPasswordChanged(String _) {
+    if (_confirmPasswordError != null) {
+      setState(() => _confirmPasswordError = null);
+    }
+  }
 }
 
 class _MainContent extends StatelessWidget {
-  const _MainContent({required this.textFormFieldData});
+  const _MainContent({
+    required this.textFormFieldData,
+    required this.onRegisterTap,
+    required this.isLoading,
+    required this.fullNameError,
+    required this.emailError,
+    required this.passwordError,
+    required this.confirmPasswordError,
+    required this.onFullNameChanged,
+    required this.onEmailChanged,
+    required this.onPasswordChanged,
+    required this.onConfirmPasswordChanged,
+  });
 
   final List<Map<String, dynamic>> textFormFieldData;
+  final Future<void> Function(bool acceptedTerms) onRegisterTap;
+  final bool isLoading;
+  final String? fullNameError;
+  final String? emailError;
+  final String? passwordError;
+  final String? confirmPasswordError;
+  final ValueChanged<String> onFullNameChanged;
+  final ValueChanged<String> onEmailChanged;
+  final ValueChanged<String> onPasswordChanged;
+  final ValueChanged<String> onConfirmPasswordChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -103,15 +292,42 @@ class _MainContent extends StatelessWidget {
               children: [
                 ...List.generate(
                   textFormFieldData.length,
-                  (index) => _TextFormFieldWidget(
-                    hintText: textFormFieldData[index]['hintText'],
-                    prefixIcon: textFormFieldData[index]['prefixIcon'],
-                    controller: textFormFieldData[index]['controller'],
-                  ),
+                  (index) {
+                    final hintText = textFormFieldData[index]['hintText'] as String;
+                    String? errorText;
+                    ValueChanged<String>? onChanged;
+                    if (hintText == 'Full Name') {
+                      errorText = fullNameError;
+                      onChanged = onFullNameChanged;
+                    } else if (hintText == 'Email') {
+                      errorText = emailError;
+                      onChanged = onEmailChanged;
+                    } else if (hintText == 'Password') {
+                      errorText = passwordError;
+                      onChanged = onPasswordChanged;
+                    } else if (hintText == 'Confirm Password') {
+                      errorText = confirmPasswordError;
+                      onChanged = onConfirmPasswordChanged;
+                    }
+
+                    return _TextFormFieldWidget(
+                      hintText: hintText,
+                      prefixIcon: textFormFieldData[index]['prefixIcon'],
+                      controller: textFormFieldData[index]['controller'],
+                      obscureText:
+                          textFormFieldData[index]['obscureText'] as bool? ??
+                          false,
+                      errorText: errorText,
+                      onChanged: onChanged,
+                    );
+                  },
                 ),
               ],
             ),
-            _BottomRegisterWidget(),
+            _BottomRegisterWidget(
+              onRegisterTap: onRegisterTap,
+              isLoading: isLoading,
+            ),
             const SizedBox(height: 0),
           ],
         ),
@@ -121,7 +337,13 @@ class _MainContent extends StatelessWidget {
 }
 
 class _BottomRegisterWidget extends StatefulWidget {
-  const _BottomRegisterWidget();
+  const _BottomRegisterWidget({
+    required this.onRegisterTap,
+    required this.isLoading,
+  });
+
+  final Future<void> Function(bool acceptedTerms) onRegisterTap;
+  final bool isLoading;
 
   @override
   State<_BottomRegisterWidget> createState() => _BottomRegisterWidgetState();
@@ -142,16 +364,21 @@ class _BottomRegisterWidgetState extends State<_BottomRegisterWidget> {
           children: [
             GestureDetector(
               onTap: () => setState(() => isChecked = !isChecked),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
                 width: 25.w,
-                height: 2.h,
+                height: 25.h,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6.r),
-                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.9),
+                    width: 1.8,
+                  ),
                   color: isChecked ? AppColors.chatText : Colors.transparent,
                 ),
+                alignment: Alignment.center,
                 child: isChecked
-                    ? Icon(Icons.check, size: 16.sp, color: Colors.white)
+                    ? Icon(Icons.check, size: 18.sp, color: Colors.white)
                     : null,
               ),
             ),
@@ -204,17 +431,8 @@ class _BottomRegisterWidgetState extends State<_BottomRegisterWidget> {
 
         /// SIGN UP BUTTON
         GestureDetector(
-          onTap: () {
-            //TODO: Implement sign up logic
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    LoginScreen(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) => child,
-              ),
-            );
+          onTap: () async {
+            await widget.onRegisterTap(isChecked);
           },
           child: SizedBox(
             height: 70.h,
@@ -246,14 +464,23 @@ class _BottomRegisterWidgetState extends State<_BottomRegisterWidget> {
                     border: Border.all(color: Colors.black, width: 2),
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      color: AppColors.text,
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: widget.isLoading
+                      ? SizedBox(
+                          width: 26.w,
+                          height: 26.h,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.text,
+                          ),
+                        )
+                      : Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            color: AppColors.text,
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -299,16 +526,24 @@ class _TextFormFieldWidget extends StatelessWidget {
   final String hintText;
   final IconData prefixIcon;
   final TextEditingController controller;
+  final bool obscureText;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
   const _TextFormFieldWidget({
     required this.hintText,
     required this.prefixIcon,
     required this.controller,
+    this.obscureText = false,
+    this.errorText,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      obscureText: obscureText,
+      onChanged: onChanged,
       cursorColor: AppColors.upcomingMessageText,
       style: TextStyle(
         fontSize: 18.sp,
@@ -333,6 +568,12 @@ class _TextFormFieldWidget extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: AppColors.chatText),
           borderRadius: BorderRadius.circular(20.r),
+        ),
+        errorText: errorText,
+        errorStyle: TextStyle(
+          fontSize: 12.sp,
+          color: Colors.redAccent,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

@@ -72,14 +72,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      //TODO: Implement sign up logic
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  RegisterScreen(),
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const RegisterScreen(),
                           transitionsBuilder:
                               (context, animation, secondaryAnimation, child) =>
                                   child,

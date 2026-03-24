@@ -39,15 +39,19 @@ class UserChatInfoWidget extends StatelessWidget {
               backgroundImage: const AssetImage('assets/images/ava.png'),
             ),
             Column(
-              spacing: 5.h,
+              spacing: 3.h,
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppColors.text,
                     fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
+                    height: 1.2,
                   ),
                 ),
                 Row(
