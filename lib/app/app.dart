@@ -1,5 +1,5 @@
 import 'package:collabix/features/home/presentation/home_screen.dart';
-import 'package:collabix/features/login/presentation/login_screen.dart';
+import 'package:collabix/features/register/presentation/register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -34,7 +34,7 @@ class App extends StatelessWidget {
                 return const HomeScreen();
               }
 
-              return const LoginScreen();
+              return const RegisterScreen();
             },
           ),
         );

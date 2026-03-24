@@ -155,7 +155,7 @@ class _DiscussionWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         width: double.infinity,
-        height: 110.h,
+        height: 115.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: AppColors.backgroundItemColor,

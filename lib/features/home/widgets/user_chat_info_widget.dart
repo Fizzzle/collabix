@@ -1,6 +1,7 @@
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 
 /// User chat info widget
 class UserChatInfoWidget extends StatelessWidget {
@@ -57,37 +58,49 @@ class UserChatInfoWidget extends StatelessWidget {
                 Row(
                   spacing: 10.w,
                   children: [
-                    Container(
-                      padding: EdgeInsets.all(4.w),
-                      decoration: BoxDecoration(
-                        color: category == 'Board'
-                            ? AppColors.boardText.withValues(alpha: 0.15)
-                            : AppColors.chatText.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Row(
-                        spacing: 5.w,
-                        children: [
-                          Icon(
-                            category == 'Board' ? Icons.dashboard : Icons.chat,
-                            color: category == 'Board'
-                                ? AppColors.boardText
-                                : AppColors.chatText,
-                            size: 13.sp,
+                    // Container(
+                    //   padding: EdgeInsets.all(4.w),
+                    //   decoration: BoxDecoration(
+                    //     color: category == 'Board'
+                    //         ? AppColors.boardText.withValues(alpha: 0.15)
+                    //         : AppColors.chatText.withValues(alpha: 0.15),
+                    //     borderRadius: BorderRadius.circular(4.r),
+                    //   ),
+                    //   child: Row(
+                    //     spacing: 5.w,
+                    //     children: [
+                    //       Icon(
+                    //         category == 'Board' ? Icons.dashboard : Icons.chat,
+                    //         color: category == 'Board'
+                    //             ? AppColors.boardText
+                    //             : AppColors.chatText,
+                    //         size: 13.sp,
+                    //       ),
+                    //       Text(
+                    //         category,
+                    //         style: TextStyle(
+                    //           color: category == 'Board'
+                    //               ? AppColors.boardText
+                    //               : AppColors.chatText,
+                    //           fontSize: 13.sp,
+                    //           fontWeight: FontWeight.bold,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    category == 'Board'
+                        ? Lottie.asset(
+                            'assets/anim/board_menu_table.json',
+                            width: 60.w,
+                            height: 40.h,
+                          )
+                        : Lottie.asset(
+                            'assets/anim/chat_menu_table.json',
+                            width: 60.w,
+                            height: 40.h,
                           ),
-                          Text(
-                            category,
-                            style: TextStyle(
-                              color: category == 'Board'
-                                  ? AppColors.boardText
-                                  : AppColors.chatText,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+
                     Text(
                       lastMessage,
                       style: TextStyle(
