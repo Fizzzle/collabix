@@ -17,6 +17,10 @@ abstract class CoreAuthService {
 
   Future<User?> registerWithGoogle();
 
+  Future<void> sendPasswordResetEmail({
+    required String email,
+  });
+
   Future<void> saveUserProfile(AppUser user);
 }
 
@@ -29,6 +33,13 @@ class CoreAuthServiceImpl implements CoreAuthService {
   );
 
   final FirebaseService _firebaseService;
+
+  @override
+  Future<void> sendPasswordResetEmail({
+    required String email,
+  }) {
+    return _firebaseService.auth.sendPasswordResetEmail(email: email);
+  }
 
   @override
   Future<UserCredential> registerWithEmailPassword({

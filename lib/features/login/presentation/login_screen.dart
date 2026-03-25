@@ -1,6 +1,10 @@
 import 'package:collabix/core/auth/services/core_auth_service.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/core/firebase/firebase_service.dart';
+import 'package:collabix/features/forgot_password/data/send_password_reset_email_repo_impl.dart';
+import 'package:collabix/features/forgot_password/domain/usecase/send_password_reser_email_use_case.dart';
+import 'package:collabix/features/forgot_password/presentation/forgot_password_screen.dart';
+import 'package:collabix/features/forgot_password/services/forgot_pass_service.dart';
 import 'package:collabix/features/home/presentation/home_screen.dart';
 import 'package:collabix/features/login/data/repositories/login_repository_impl.dart';
 import 'package:collabix/features/login/data/services/login_remote_service.dart';
@@ -83,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
               passwordError: _passwordError,
               onEmailChanged: _onEmailChanged,
               onPasswordChanged: _onPasswordChanged,
+              onForgotPasswordService: _onForgotPasswordService(),
             ),
 
             Positioned(
@@ -233,6 +238,13 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _passwordError = null);
     }
   }
+
+  ForgotPasswordService _onForgotPasswordService() {
+    final authRepository = SendPasswordResetEmailRepoImpl(
+      FirebaseServiceImpl(),
+    );
+    return ForgotPasswordService(SendPasswordResetEmailUseCase(authRepository));
+  }
 }
 
 class _MainContent extends StatelessWidget {
@@ -244,6 +256,7 @@ class _MainContent extends StatelessWidget {
     required this.passwordError,
     required this.onEmailChanged,
     required this.onPasswordChanged,
+    required this.onForgotPasswordService,
   });
 
   final List<Map<String, dynamic>> textFormFieldData;
@@ -253,7 +266,7 @@ class _MainContent extends StatelessWidget {
   final String? passwordError;
   final ValueChanged<String> onEmailChanged;
   final ValueChanged<String> onPasswordChanged;
-
+  final ForgotPasswordService onForgotPasswordService;
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -268,29 +281,42 @@ class _MainContent extends StatelessWidget {
             Column(
               spacing: 16.h,
               children: [
-                ...List.generate(
-                  textFormFieldData.length,
-                  (index) {
-                    final hintText = textFormFieldData[index]['hintText'];
-                    return _TextFormFieldWidget(
-                      hintText: hintText,
-                      prefixIcon: textFormFieldData[index]['prefixIcon'],
-                      controller: textFormFieldData[index]['controller'],
-                      obscureText: hintText == 'Password',
-                      errorText: hintText == 'Email' ? emailError : passwordError,
-                      onChanged: hintText == 'Email'
-                          ? onEmailChanged
-                          : onPasswordChanged,
-                    );
-                  },
-                ),
+                ...List.generate(textFormFieldData.length, (index) {
+                  final hintText = textFormFieldData[index]['hintText'];
+                  return _TextFormFieldWidget(
+                    hintText: hintText,
+                    prefixIcon: textFormFieldData[index]['prefixIcon'],
+                    controller: textFormFieldData[index]['controller'],
+                    obscureText: hintText == 'Password',
+                    errorText: hintText == 'Email' ? emailError : passwordError,
+                    onChanged: hintText == 'Email'
+                        ? onEmailChanged
+                        : onPasswordChanged,
+                  );
+                }),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     GestureDetector(
                       onTap: () {
                         //TODO: Implement forgot password logic
-                        debugPrint('Forgot Password? clicked');
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    ForgotPasswordScreen(
+                                      service: onForgotPasswordService,
+                                    ),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) => child,
+                          ),
+                        );
                       },
                       child: Text(
                         'Forgot Password?',
@@ -315,10 +341,7 @@ class _MainContent extends StatelessWidget {
 }
 
 class _BottomLoginWidget extends StatefulWidget {
-  const _BottomLoginWidget({
-    required this.onLoginTap,
-    required this.isLoading,
-  });
+  const _BottomLoginWidget({required this.onLoginTap, required this.isLoading});
 
   final Future<void> Function() onLoginTap;
   final bool isLoading;
