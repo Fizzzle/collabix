@@ -1,5 +1,6 @@
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/features/conversation/presentation/conversation_screen.dart';
+import 'package:collabix/features/create_chat/presentation/create_chat_screen.dart';
 import 'package:collabix/features/home/widgets/name_and_logo_widget.dart';
 import 'package:collabix/features/home/widgets/profile_widget.dart';
 import 'package:collabix/features/home/widgets/user_chat_info_widget.dart';
@@ -129,7 +130,15 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: const CircleBorder(),
         backgroundColor: AppColors.boardText,
         onPressed: () {
-          ///TODO: implement create space screen
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) => const CreateChatScreen(),
+              transitionsBuilder: (_, animation, __, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            ),
+          );
         },
         child: Image.asset('assets/images/plus.png'),
       ),
