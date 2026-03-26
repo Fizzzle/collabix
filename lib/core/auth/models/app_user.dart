@@ -28,4 +28,16 @@ class AppUser {
       'aiAssists': aiAssists,
     };
   }
+
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
+      uid: json['uid'],
+      name: json['name'],
+      email: json['email'],
+      description: json['description'],
+      dayStreak: json['dayStreak'],
+      boardsCreated: json['boardsCreated'],
+      aiAssists: json['aiAssists'],
+    );
+  }
 }

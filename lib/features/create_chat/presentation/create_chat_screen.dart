@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:collabix/core/constants/app_colors.dart';
-import 'package:collabix/features/create_chat/bloc/create_chat_bloc.dart';
+import 'package:collabix/core/auth/models/app_user.dart';
+import 'package:collabix/features/create_chat/bloc/create_chat_bloc/create_chat_bloc.dart';
+import 'package:collabix/features/create_chat/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
 import 'package:collabix/features/create_chat/widgets/create_chat_button_widget.dart';
 import 'package:collabix/features/create_chat/widgets/create_chat_title_widget.dart';
 import 'package:collabix/features/create_chat/widgets/text_field_and_title_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -40,6 +45,9 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   final TextEditingController _chatDescriptionController =
       TextEditingController();
   final TextEditingController _participantsController = TextEditingController();
+  Timer? _searchDebounce;
+  final List<AppUser> _selectedUsers = [];
+  bool _participantsHasError = false;
 
   late final List<_FieldConfig> _fields = [
     _FieldConfig(
@@ -49,21 +57,21 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
       icon: Icons.tag_rounded,
       isRequired: true,
       errorText: 'Chat name is required',
+      hasError: false,
     ),
     _FieldConfig(
       title: 'Description (Optional)',
       hintText: "What's the chat about?",
       controller: _chatDescriptionController,
-    ),
-    _FieldConfig(
-      title: 'Add Participants \t*',
-      hintText: 'Type names to add participants',
-      controller: _participantsController,
-      icon: Icons.person_add_alt_1_outlined,
-      isRequired: true,
-      errorText: 'Add at least one participant',
+      hasError: false,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _participantsController.addListener(_onParticipantsChanged);
+  }
 
   bool _validate() {
     bool isValid = true;
@@ -76,12 +84,52 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
           field.hasError = false;
         }
       }
+
+      if (_selectedUsers.isEmpty) {
+        _participantsHasError = true;
+        isValid = false;
+      } else {
+        _participantsHasError = false;
+      }
     });
     return isValid;
   }
 
+  void _onParticipantsChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final query = _participantsController.text.trim();
+      context.read<FetchAllUsersBloc>().add(
+        FetchUsersByNicknameRequestedEvent(query: query),
+      );
+    });
+  }
+
+  void _onSelectUser(AppUser user) {
+    if (_selectedUsers.any((selected) => selected.uid == user.uid)) return;
+
+    setState(() {
+      _selectedUsers.add(user);
+      _participantsHasError = false;
+      _participantsController.clear();
+    });
+    context.read<FetchAllUsersBloc>().add(FetchAllUsersRequestedEvent());
+  }
+
+  void _onRemoveUser(String uid) {
+    setState(() {
+      _selectedUsers.removeWhere((user) => user.uid == uid);
+    });
+  }
+
   void _onCreateChat() {
     if (!_validate()) return;
+
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    final participantsIds = _selectedUsers.map((u) => u.uid).toSet();
+    if (currentUserUid != null && currentUserUid.isNotEmpty) {
+      participantsIds.add(currentUserUid);
+    }
 
     context.read<CreateChatBloc>().add(
       CreateChatRequestedEvent(
@@ -89,18 +137,15 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         chatDescription: _chatDescriptionController.text.trim().isEmpty
             ? null
             : _chatDescriptionController.text.trim(),
-        participants: _participantsController.text
-            .trim()
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList(),
+        participantsIds: participantsIds.toList(),
       ),
     );
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _participantsController.removeListener(_onParticipantsChanged);
     for (final field in _fields) {
       field.controller.dispose();
     }
@@ -145,15 +190,22 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                   child: Column(
                     spacing: 34.h,
                     children: [
-                      ..._fields.map(
-                        (field) => TextFieldAndTitleWidget(
+                      ..._fields.map((field) {
+                        return TextFieldAndTitleWidget(
                           title: field.title,
                           hintText: field.hintText,
                           controller: field.controller,
                           icon: field.icon,
                           hasError: field.hasError,
                           errorText: field.errorText,
-                        ),
+                        );
+                      }),
+                      _ParticipantsSelectorSection(
+                        controller: _participantsController,
+                        selectedUsers: _selectedUsers,
+                        hasError: _participantsHasError,
+                        onSelectUser: _onSelectUser,
+                        onRemoveUser: _onRemoveUser,
                       ),
                     ],
                   ),
@@ -168,6 +220,180 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ParticipantsSelectorSection extends StatelessWidget {
+  final TextEditingController controller;
+  final List<AppUser> selectedUsers;
+  final bool hasError;
+  final ValueChanged<AppUser> onSelectUser;
+  final ValueChanged<String> onRemoveUser;
+
+  const _ParticipantsSelectorSection({
+    required this.controller,
+    required this.selectedUsers,
+    required this.hasError,
+    required this.onSelectUser,
+    required this.onRemoveUser,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Add Participants \t*',
+          style: TextStyle(
+            color: AppColors.upcomingMessageText,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'SpaceGrot',
+          ),
+        ),
+        SizedBox(height: 10.h),
+        TextFormField(
+          controller: controller,
+          keyboardType: TextInputType.text,
+          cursorColor: AppColors.upcomingMessageText,
+          style: TextStyle(
+            color: AppColors.text,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'SpaceGrot',
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.backgroundItemColor,
+            hintText: 'Type names to add participants',
+            prefixIcon: const Icon(
+              Icons.person_add_alt_1_outlined,
+              color: AppColors.upcomingMessageText,
+            ),
+            errorText: hasError ? 'Add at least one participant' : null,
+            border: OutlineInputBorder(
+              borderSide: const BorderSide(color: AppColors.borderColor),
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: hasError ? Colors.redAccent : AppColors.boardText,
+              ),
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: hasError ? Colors.redAccent : AppColors.borderColor,
+                width: hasError ? 1.5 : 1.0,
+              ),
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+          ),
+        ),
+        SizedBox(height: 10.h),
+        if (selectedUsers.isNotEmpty)
+          SizedBox(
+            height: 44.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: selectedUsers.length,
+              separatorBuilder: (_, __) => SizedBox(width: 8.w),
+              itemBuilder: (context, index) {
+                final user = selectedUsers[index];
+                return Chip(
+                  label: Text(user.name),
+                  onDeleted: () => onRemoveUser(user.uid),
+                  deleteIconColor: AppColors.text,
+                  backgroundColor: AppColors.backgroundItemColor,
+                  side: const BorderSide(color: AppColors.borderColor),
+                  labelStyle: TextStyle(
+                    color: AppColors.text,
+                    fontSize: 13.sp,
+                    fontFamily: 'SpaceGrot',
+                  ),
+                );
+              },
+            ),
+          ),
+        if (selectedUsers.isNotEmpty) SizedBox(height: 10.h),
+        BlocBuilder<FetchAllUsersBloc, FetchAllUsersState>(
+          builder: (context, state) {
+            if (state is FetchAllUsersLoading) {
+              return const Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+
+            if (state is FetchAllUsersFailure) {
+              return Text(
+                state.error,
+                style: TextStyle(color: Colors.redAccent, fontSize: 12.sp),
+              );
+            }
+
+            if (state is! FetchAllUsersSuccess) {
+              return const SizedBox.shrink();
+            }
+
+            final filtered = state.users.where((user) {
+              final isCurrent = currentUserUid != null && user.uid == currentUserUid;
+              final alreadySelected = selectedUsers.any((u) => u.uid == user.uid);
+              return !isCurrent && !alreadySelected;
+            }).toList();
+
+            if (filtered.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Container(
+              constraints: BoxConstraints(maxHeight: 180.h),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundItemColor,
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(color: AppColors.borderColor),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: filtered.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, color: AppColors.borderColor),
+                itemBuilder: (context, index) {
+                  final user = filtered[index];
+                  return ListTile(
+                    dense: true,
+                    onTap: () => onSelectUser(user),
+                    title: Text(
+                      user.name,
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontSize: 14.sp,
+                        fontFamily: 'SpaceGrot',
+                      ),
+                    ),
+                    subtitle: Text(
+                      user.email,
+                      style: TextStyle(
+                        color: AppColors.upcomingMessageText,
+                        fontSize: 12.sp,
+                        fontFamily: 'SpaceGrot',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -22,7 +22,7 @@ class CreateChatBloc extends Bloc<CreateChatEvent, CreateChatState> {
       final chat = await createChatUseCase(
         chatName: event.chatName,
         chatDescription: event.chatDescription ?? '',
-        participants: event.participants,
+        participants: event.participantsIds,
       );
       emit(CreateChatSuccess(chat: chat));
     } catch (e) {

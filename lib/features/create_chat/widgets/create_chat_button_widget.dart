@@ -1,5 +1,5 @@
 import 'package:collabix/core/constants/app_colors.dart';
-import 'package:collabix/features/create_chat/bloc/create_chat_bloc.dart';
+import 'package:collabix/features/create_chat/bloc/create_chat_bloc/create_chat_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

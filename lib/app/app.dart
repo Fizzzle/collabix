@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:collabix/features/create_chat/bloc/create_chat_bloc.dart';
+import 'package:collabix/features/create_chat/bloc/create_chat_bloc/create_chat_bloc.dart';
+import 'package:collabix/features/create_chat/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
 import 'package:collabix/features/create_chat/data/datasource/create_chat_remote_datasource.dart';
+import 'package:collabix/features/create_chat/data/datasource/user_remote_data_source.dart';
 import 'package:collabix/features/create_chat/data/repository/create_chat_repository_impl.dart';
+import 'package:collabix/features/create_chat/data/repository/user_repo_impl.dart';
 import 'package:collabix/features/create_chat/domain/usecase/create_chat_use_case.dart';
+import 'package:collabix/features/create_chat/domain/usecase/fetch_all_users_use_case.dart';
 import 'package:collabix/features/home/presentation/home_screen.dart';
 import 'package:collabix/features/login/presentation/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +24,10 @@ class App extends StatelessWidget {
     final createChatRepository = CreateChatRepositoryImpl(createChatRemote);
     final createChatUseCase = CreateChatUseCase(createChatRepository);
 
+    final fetchAllUsersRemote = UserRemoteDataSourceImpl(firestore);
+    final fetchAllUserRepository = UserRepoImpl(fetchAllUsersRemote);
+    final fetchAllUsersUseCase = FetchAllUsersUseCase(fetchAllUserRepository);
+
     return ScreenUtilInit(
       designSize: const Size(412, 917),
       minTextAdapt: true,
@@ -27,9 +35,14 @@ class App extends StatelessWidget {
       builder: (_, __) {
         return MultiBlocProvider(
           providers: [
-            // Для остальных блоков
+            //1. Create Chat Bloc
             BlocProvider<CreateChatBloc>(
               create: (_) => CreateChatBloc(createChatUseCase),
+            ),
+
+            //2. Fetch All Users Bloc
+            BlocProvider<FetchAllUsersBloc>(
+              create: (_) => FetchAllUsersBloc(fetchAllUsersUseCase),
             ),
           ],
           child: MaterialApp(

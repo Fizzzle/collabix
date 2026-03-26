@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/features/conversation/presentation/conversation_screen.dart';
 import 'package:collabix/features/create_chat/presentation/create_chat_screen.dart';
 import 'package:collabix/features/home/widgets/name_and_logo_widget.dart';
 import 'package:collabix/features/home/widgets/profile_widget.dart';
 import 'package:collabix/features/home/widgets/user_chat_info_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -18,68 +20,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchController = TextEditingController();
+  bool _isReloading = false;
 
-  //!Fake DATA for while development
-  final List<Map<String, dynamic>> chatInfo = [
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Chat',
-      'time': '12:00',
-    },
-
-    {
-      'title': 'Weekend Trip',
-      'lastMessage': 'Last message',
-      'category': 'Board',
-      'time': '12:00',
-    },
-
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Chat',
-      'time': '12:00',
-    },
-
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Chat',
-      'time': '12:00',
-    },
-
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Board',
-      'time': '12:00',
-    },
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Chat',
-      'time': '12:00',
-    },
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Board',
-      'time': '12:00',
-    },
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Board',
-      'time': '12:00',
-    },
-    {
-      'title': 'Project Neo',
-      'lastMessage': 'Last message',
-      'category': 'Chat',
-      'time': '12:00',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    searchController.addListener(_onSearchChanged);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,38 +36,112 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () {
           FocusManager.instance.primaryFocus?.unfocus();
         },
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 20.0),
-          child: SingleChildScrollView(
-            child: Column(
-              spacing: 28,
-              children: [
-                const _AppBarWidget(),
-                _FindSpacesWidget(searchController: searchController),
-                ...List.generate(
-                  chatInfo.length,
-                  (index) => _DiscussionWidget(
-                    chatInfo: chatInfo[index],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => ConversationScreen(
-                            conversationTitle:
-                                chatInfo[index]['title'] as String,
+        child: RefreshIndicator(
+          onRefresh: _reloadChats,
+          color: AppColors.boardText,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(15.0, 20.0, 15.0, 20.0),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                spacing: 28,
+                children: [
+                  _AppBarWidget(
+                    onReload: _reloadChats,
+                    isReloading: _isReloading,
+                  ),
+                  _FindSpacesWidget(searchController: searchController),
+                  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _chatsStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return Text(
+                          'Failed to load chats',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 14.sp,
                           ),
-                          transitionsBuilder: (_, animation, __, child) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            );
-                          },
-                        ),
+                        );
+                      }
+
+                      final docs = snapshot.data?.docs ?? [];
+                      if (docs.isEmpty) {
+                        return Text(
+                          'No chats yet. Create your first one.',
+                          style: TextStyle(
+                            color: AppColors.upcomingMessageText,
+                            fontSize: 14.sp,
+                          ),
+                        );
+                      }
+
+                      final query = searchController.text.trim().toLowerCase();
+                      final chats = docs.map((doc) => doc.data()).where((chat) {
+                        if (query.isEmpty) return true;
+                        final title = (chat['chatName'] ?? '')
+                            .toString()
+                            .toLowerCase();
+                        return title.contains(query);
+                      }).toList();
+
+                      if (chats.isEmpty) {
+                        return Text(
+                          'No chats match your search.',
+                          style: TextStyle(
+                            color: AppColors.upcomingMessageText,
+                            fontSize: 14.sp,
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: List.generate(chats.length, (index) {
+                          final chat = chats[index];
+                          final title = (chat['chatName'] ?? 'Untitled Chat')
+                              .toString();
+
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 10.h),
+                            child: _DiscussionWidget(
+                              chatInfo: {
+                                'title': title,
+                                'lastMessage': 'No messages yet',
+                                'category': 'Chat',
+                                'time': '',
+                              },
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder: (_, __, ___) =>
+                                        ConversationScreen(
+                                          conversationTitle: title,
+                                        ),
+                                    transitionsBuilder:
+                                        (_, animation, __, child) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          );
+                                        },
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        }),
                       );
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -147,8 +168,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _reloadChats() async {
+    if (_isReloading) return;
+    setState(() => _isReloading = true);
+    try {
+      final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserUid == null || currentUserUid.isEmpty) return;
+
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .where('participants', arrayContains: currentUserUid)
+          .get(const GetOptions(source: Source.server));
+      if (mounted) setState(() {});
+    } finally {
+      if (mounted) setState(() => _isReloading = false);
+    }
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _chatsStream() {
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserUid == null || currentUserUid.isEmpty) {
+      return const Stream.empty();
+    }
+
+    return FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: currentUserUid)
+        .snapshots();
   }
 }
 
@@ -213,7 +268,10 @@ class _FindSpacesWidget extends StatelessWidget {
 }
 
 class _AppBarWidget extends StatelessWidget {
-  const _AppBarWidget();
+  final Future<void> Function() onReload;
+  final bool isReloading;
+
+  const _AppBarWidget({required this.onReload, required this.isReloading});
 
   @override
   Widget build(BuildContext context) {

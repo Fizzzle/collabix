@@ -9,7 +9,6 @@ final class CreateChatLoading extends CreateChatState {}
 
 final class CreateChatSuccess extends CreateChatState {
   final CreateChatEntity chat;
-
   CreateChatSuccess({required this.chat});
 }
 
