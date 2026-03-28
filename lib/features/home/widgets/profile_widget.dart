@@ -1,20 +1,17 @@
 import 'package:collabix/core/constants/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Profile widget
 class ProfileWidget extends StatelessWidget {
-  /// On tap callback
   final void Function() onTap;
 
-  /// Constructor
-  const ProfileWidget({
-    required this.onTap,
-    super.key,
-  });
+  const ProfileWidget({required this.onTap, super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return SizedBox(
       width: 55.w,
       height: 55.h,
@@ -38,10 +35,19 @@ class ProfileWidget extends StatelessWidget {
                 backgroundColor: const Color(0xFF3F3F47),
               ),
             ),
-
             CircleAvatar(
-              radius: 22.r,
-              backgroundImage: const AssetImage('assets/images/ava.png'),
+              radius: 24.r,
+              backgroundColor: AppColors.backgroundItemColor,
+              backgroundImage: user?.photoURL != null
+                  ? NetworkImage(user!.photoURL!)
+                  : null,
+              child: user?.photoURL == null
+                  ? Icon(
+                      Icons.person_rounded,
+                      size: 22.sp,
+                      color: AppColors.upcomingMessageText,
+                    )
+                  : null,
             ),
           ],
         ),

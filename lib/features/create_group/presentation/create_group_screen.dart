@@ -11,8 +11,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 
-// ── Typed model для полей ──
 class _FieldConfig {
   final String title;
   final String hintText;
@@ -84,7 +84,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           field.hasError = false;
         }
       }
-
       if (_selectedUsers.isEmpty) {
         _participantsHasError = true;
         isValid = false;
@@ -107,7 +106,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   void _onSelectUser(AppUser user) {
     if (_selectedUsers.any((selected) => selected.uid == user.uid)) return;
-
     setState(() {
       _selectedUsers.add(user);
       _participantsHasError = false;
@@ -124,13 +122,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   void _onCreateGroup() {
     if (!_validate()) return;
-
     final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
     final participantsIds = _selectedUsers.map((u) => u.uid).toSet();
     if (currentUserUid != null && currentUserUid.isNotEmpty) {
       participantsIds.add(currentUserUid);
     }
-
     context.read<CreateGroupBloc>().add(
       CreateGroupRequestedEvent(
         chatName: _chatNameController.text.trim(),
@@ -182,12 +178,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 const SizedBox(),
                 const _AppBarCreateGroupWidget(),
                 const Divider(color: AppColors.borderColor, thickness: 2),
-
                 _PrivatePublicSelectorWidget(
                   onChanged: (isPrivate) => _isPrivate = isPrivate,
                 ),
-
-                // ── Поля ──
                 Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: 24.w,
@@ -216,7 +209,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     ],
                   ),
                 ),
-
                 Padding(
                   padding: EdgeInsets.fromLTRB(2.w, 40.h, 2.w, 0),
                   child: _BottomContent(onCreateGroup: _onCreateGroup),
@@ -248,16 +240,12 @@ class _PrivatePublicSelectorWidgetState
   @override
   void initState() {
     super.initState();
-    isPrivate = widget.isPrivate ?? true; // приват по дефолту
+    isPrivate = widget.isPrivate ?? true;
   }
 
   void _toggle(bool value) {
-    setState(() {
-      isPrivate = value;
-    });
-    if (widget.onChanged != null) {
-      widget.onChanged!(isPrivate);
-    }
+    setState(() => isPrivate = value);
+    widget.onChanged?.call(value);
   }
 
   @override
@@ -266,120 +254,166 @@ class _PrivatePublicSelectorWidgetState
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        spacing: 10.w,
         children: [
-          // Private
-          GestureDetector(
+          _PressButton(
+            label: 'Private',
+            lottiePath: 'assets/anim/buttons/button_private.json',
+            isActive: isPrivate,
             onTap: () => _toggle(true),
-            child: AnimatedContainer(
-              width: 150.w,
-              height: 60.h,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                color: isPrivate
-                    ? AppColors.chatText.withValues(alpha: 0.5)
-                    : AppColors.chatText.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border(
-                  top: BorderSide(
-                    color: isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.8)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: 4.w,
-                  ),
-                  right: BorderSide(
-                    color: isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.8)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: isPrivate ? 8.w : 4.w,
-                  ),
-                  bottom: BorderSide(
-                    color: isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.8)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: 4.w,
-                  ),
-                  left: BorderSide(
-                    color: isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.8)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: 4.w,
-                  ),
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  'Private',
-                  style: TextStyle(
-                    color: isPrivate
-                        ? AppColors.text
-                        : AppColors.chatText, // серый для неактивного
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'SpaceGrot',
-                  ),
-                ),
-              ),
-            ),
           ),
-
-          // Public
-          GestureDetector(
+          SizedBox(width: 10.w),
+          _PressButton(
+            label: 'Public',
+            lottiePath: 'assets/anim/buttons/button_public.json',
+            isActive: !isPrivate,
             onTap: () => _toggle(false),
-            child: AnimatedContainer(
-              width: 150.w,
-              height: 60.h,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                color: !isPrivate
-                    ? AppColors.chatText.withValues(alpha: 0.5)
-                    : AppColors.chatText.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border(
-                  top: BorderSide(
-                    color: !isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.6)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: 4.w,
-                  ),
-                  right: BorderSide(
-                    color: !isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.6)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: 4.w,
-                  ),
-                  bottom: BorderSide(
-                    color: !isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.6)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: 4.w,
-                  ),
-                  left: BorderSide(
-                    color: !isPrivate
-                        ? AppColors.chatText.withValues(alpha: 0.6)
-                        : AppColors.chatText.withValues(alpha: 0.3),
-                    width: !isPrivate ? 8.w : 4.w,
-                  ),
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  'Public',
-                  style: TextStyle(
-                    color: isPrivate
-                        ? AppColors.chatText
-                        : AppColors.text, // серый для неактивного
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'SpaceGrot',
-                  ),
-                ),
-              ),
-            ),
+            appColor: AppColors.boardText,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PressButton extends StatefulWidget {
+  const _PressButton({
+    required this.label,
+    required this.lottiePath,
+    required this.isActive,
+    required this.onTap,
+    this.appColor,
+  });
+
+  final String label;
+  final String lottiePath;
+  final bool isActive;
+  final VoidCallback onTap;
+  final Color? appColor;
+  @override
+  State<_PressButton> createState() => _PressButtonState();
+}
+
+class _PressButtonState extends State<_PressButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _lottieController;
+  bool _pressed = false;
+
+  static const double _pressOffset = 5.0;
+  static const Duration _pressDuration = Duration(milliseconds: 80);
+  static const Duration _releaseDuration = Duration(milliseconds: 120);
+
+  @override
+  void initState() {
+    super.initState();
+    _lottieController = AnimationController(vsync: this);
+  }
+
+  @override
+  void didUpdateWidget(_PressButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _lottieController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _lottieController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onTapDown() async {
+    setState(() => _pressed = true);
+  }
+
+  Future<void> _onTapUp() async {
+    widget.onTap();
+    await Future.delayed(_pressDuration);
+    if (mounted) setState(() => _pressed = false);
+  }
+
+  void _onTapCancel() {
+    if (mounted) setState(() => _pressed = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _onTapDown(),
+      onTapUp: (_) => _onTapUp(),
+      onTapCancel: _onTapCancel,
+      child: SizedBox(
+        width: 150.w,
+        height: 70.h,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            Positioned(
+              bottom: 0,
+              child: Container(
+                width: 150.w,
+                height: 60.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14.r),
+                  color: widget.isActive
+                      ? widget.appColor?.withValues(alpha: 0.6) ??
+                            AppColors.chatText.withValues(alpha: 0.6)
+                      : widget.appColor?.withValues(alpha: 0.2) ??
+                            AppColors.chatText.withValues(alpha: 0.2),
+                ),
+              ),
+            ),
+            AnimatedPositioned(
+              duration: _pressed ? _pressDuration : _releaseDuration,
+              curve: _pressed ? Curves.easeIn : Curves.easeOut,
+              top: _pressed ? _pressOffset : 0,
+              child: SizedBox(
+                width: 150.w,
+                height: 60.h,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14.r),
+                      child: Lottie.asset(
+                        widget.lottiePath,
+                        controller: _lottieController,
+                        width: 150.w,
+                        height: 60.h,
+                        fit: BoxFit.cover,
+                        onLoaded: (composition) {
+                          _lottieController.duration = composition.duration;
+                          if (widget.isActive) {
+                            _lottieController.forward(from: 0);
+                          }
+                        },
+                      ),
+                    ),
+                    if (!widget.isActive)
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14.r),
+                          color: Colors.black.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 150),
+                      style: TextStyle(
+                        color: widget.isActive
+                            ? AppColors.text
+                            : AppColors.upcomingMessageText,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'SpaceGrot',
+                      ),
+                      child: Text(widget.label),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -562,7 +596,6 @@ class _ParticipantsSelectorSection extends StatelessWidget {
   }
 }
 
-// ── AppBar ──
 class _AppBarCreateGroupWidget extends StatelessWidget {
   const _AppBarCreateGroupWidget();
 
@@ -580,7 +613,6 @@ class _AppBarCreateGroupWidget extends StatelessWidget {
   }
 }
 
-// ── Bottom content ──
 class _BottomContent extends StatelessWidget {
   final VoidCallback onCreateGroup;
 
@@ -611,7 +643,7 @@ class _BottomContent extends StatelessWidget {
                 'Sync across all devices',
                 style: TextStyle(
                   color: AppColors.text,
-                  fontSize: 14.sp,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'SpaceGrot',
                 ),

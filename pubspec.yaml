@@ -71,6 +71,7 @@ flutter:
     - assets/anim/
     - assets/anim/icons/
     - assets/anim/buttons/
+    - assets/anim/decor/
 
   # example:
   fonts:

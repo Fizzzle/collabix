@@ -17,11 +17,20 @@ abstract class CoreAuthService {
 
   Future<User?> registerWithGoogle();
 
-  Future<void> sendPasswordResetEmail({
-    required String email,
-  });
+  Future<void> sendPasswordResetEmail({required String email});
 
   Future<void> saveUserProfile(AppUser user);
+
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String description,
+    String? photoURL,
+  });
+
+  Future<AppUser?> fetchUserProfile(String uid);
+
+  Future<void> signOut();
 }
 
 class CoreAuthServiceImpl implements CoreAuthService {
@@ -35,9 +44,7 @@ class CoreAuthServiceImpl implements CoreAuthService {
   final FirebaseService _firebaseService;
 
   @override
-  Future<void> sendPasswordResetEmail({
-    required String email,
-  }) {
+  Future<void> sendPasswordResetEmail({required String email}) {
     return _firebaseService.auth.sendPasswordResetEmail(email: email);
   }
 
@@ -87,9 +94,7 @@ class CoreAuthServiceImpl implements CoreAuthService {
 
       final user = userCred.user;
 
-      if (user == null) {
-        throw Exception('Google sign in failed');
-      }
+      if (user == null) throw Exception('Google sign in failed');
 
       await saveUserProfile(
         AppUser(
@@ -117,5 +122,51 @@ class CoreAuthServiceImpl implements CoreAuthService {
       ...user.toFirestoreMap(),
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  @override
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String description,
+    String? photoURL,
+  }) async {
+    final user = _firebaseService.auth.currentUser;
+    if (user == null) return;
+
+    await user.updateDisplayName(name);
+    if (photoURL != null) {
+      await user.updatePhotoURL(photoURL);
+    }
+    await user.reload();
+
+    final Map<String, dynamic> data = {
+      'name': name,
+      'description': description,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (photoURL != null) {
+      data['photoURL'] = photoURL;
+    }
+
+    await _firebaseService.firestore.collection('users').doc(uid).update(data);
+  }
+
+  @override
+  Future<AppUser?> fetchUserProfile(String uid) async {
+    final doc = await _firebaseService.firestore
+        .collection('users')
+        .doc(uid)
+        .get();
+    if (!doc.exists) return null;
+    return AppUser.fromFirestoreMap(doc.id, doc.data()!);
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _firebaseService.auth.signOut();
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
   }
 }

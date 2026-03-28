@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/features/conversation/presentation/conversation_screen.dart';
+import 'package:collabix/features/conversation/screens/profile/profile_page.dart';
 import 'package:collabix/features/create_group/presentation/create_group_screen.dart';
 import 'package:collabix/features/home/widgets/name_and_logo_widget.dart';
 import 'package:collabix/features/home/widgets/profile_widget.dart';
@@ -275,7 +276,15 @@ class _AppBarWidget extends StatelessWidget {
         const NameAndLogoWidget(),
         ProfileWidget(
           onTap: () {
-            ///TODO: implement profile screen
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const ProfilePage(),
+                transitionsBuilder: (_, animation, __, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+              ),
+            );
           },
         ),
       ],
