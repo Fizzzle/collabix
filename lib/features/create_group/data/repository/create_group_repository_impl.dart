@@ -12,11 +12,13 @@ class CreateGroupRepositoryImpl implements CreateGroupRepository {
     String chatName,
     String chatDescription,
     List<String> participants,
+    bool isPrivate,
   ) async {
     final groupModel = await remote.createGroup(
       chatName,
       chatDescription,
       participants,
+      isPrivate,
     );
 
     return groupModel;

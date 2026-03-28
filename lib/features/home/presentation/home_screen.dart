@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             PageRouteBuilder(
-              pageBuilder: (_, __, ___) => const CreateChatScreen(),
+              pageBuilder: (_, __, ____) => const CreateGroupScreen(),
               transitionsBuilder: (_, animation, __, child) {
                 return FadeTransition(opacity: animation, child: child);
               },
@@ -164,13 +164,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Image.asset('assets/images/plus.png'),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    searchController.removeListener(_onSearchChanged);
-    searchController.dispose();
-    super.dispose();
   }
 
   void _onSearchChanged() {
@@ -185,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (currentUserUid == null || currentUserUid.isEmpty) return;
 
       await FirebaseFirestore.instance
-          .collection('chats')
+          .collection('Groups')
           .where('participants', arrayContains: currentUserUid)
           .get(const GetOptions(source: Source.server));
       if (mounted) setState(() {});
@@ -201,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return FirebaseFirestore.instance
-        .collection('chats')
+        .collection('Groups')
         .where('participants', arrayContains: currentUserUid)
         .snapshots();
   }

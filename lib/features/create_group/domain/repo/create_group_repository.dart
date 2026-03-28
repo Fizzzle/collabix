@@ -5,5 +5,6 @@ abstract class CreateGroupRepository {
     String chatName,
     String chatDescription,
     List<String> participants,
+    bool isPrivate,
   );
 }

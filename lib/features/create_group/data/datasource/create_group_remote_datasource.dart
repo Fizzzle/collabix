@@ -6,6 +6,7 @@ abstract class CreateGroupRemoteDataSource {
     String chatName,
     String chatDescription,
     List<String> participants,
+    bool isPrivate,
   );
 }
 
@@ -19,10 +20,9 @@ class GroupCreationRemoteDataSourceImpl implements CreateGroupRemoteDataSource {
     String chatName,
     String chatDescription,
     List<String> participants,
+    bool isPrivate,
   ) async {
-    final doc = firestore
-        .collection(participants.length > 2 ? 'group' : 'dirrect')
-        .doc();
+    final doc = firestore.collection('Groups').doc();
 
     final chat = CreateGroupModel(
       id: doc.id,
@@ -30,6 +30,7 @@ class GroupCreationRemoteDataSourceImpl implements CreateGroupRemoteDataSource {
       chatDescription: chatDescription,
       participants: participants,
       createdAt: DateTime.now(),
+      isPrivate: isPrivate,
     );
 
     await doc.set(chat.toJson());

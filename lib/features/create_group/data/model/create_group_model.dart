@@ -6,6 +6,7 @@ class CreateGroupModel extends CreateGroupEntity {
     required super.chatName,
     required super.chatDescription,
     required super.participants,
+    required super.isPrivate,
     required super.createdAt,
   });
 
@@ -16,6 +17,7 @@ class CreateGroupModel extends CreateGroupEntity {
       chatDescription: json['chatDescription'],
       participants: json['participants'],
       createdAt: json['createdAt'],
+      isPrivate: json['isPrivate'],
     );
   }
   Map<String, dynamic> toJson() {
@@ -25,6 +27,7 @@ class CreateGroupModel extends CreateGroupEntity {
       'chatDescription': chatDescription,
       'participants': participants,
       'createdAt': createdAt,
+      'isPrivate': isPrivate,
     };
   }
 }

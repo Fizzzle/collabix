@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class CreateChatButtonWidget extends StatelessWidget {
+class CreateGroupButtonWidget extends StatelessWidget {
   final VoidCallback onTap;
 
-  const CreateChatButtonWidget({super.key, required this.onTap});
+  const CreateGroupButtonWidget({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

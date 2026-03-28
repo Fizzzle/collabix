@@ -4,8 +4,8 @@ import 'package:collabix/core/auth/models/app_user.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/features/create_group/bloc/create_group_bloc/create_group_bloc.dart';
 import 'package:collabix/features/create_group/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
-import 'package:collabix/features/create_group/widgets/create_chat_title_widget.dart';
 import 'package:collabix/features/create_group/widgets/create_group_button_widget.dart';
+import 'package:collabix/features/create_group/widgets/create_group_title_widget.dart';
 import 'package:collabix/features/create_group/widgets/text_field_and_title_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -33,14 +33,14 @@ class _FieldConfig {
   });
 }
 
-class CreateChatScreen extends StatefulWidget {
-  const CreateChatScreen({super.key});
+class CreateGroupScreen extends StatefulWidget {
+  const CreateGroupScreen({super.key});
 
   @override
-  State<CreateChatScreen> createState() => _CreateChatScreenState();
+  State<CreateGroupScreen> createState() => _CreateGroupScreenState();
 }
 
-class _CreateChatScreenState extends State<CreateChatScreen> {
+class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final TextEditingController _chatNameController = TextEditingController();
   final TextEditingController _chatDescriptionController =
       TextEditingController();
@@ -48,20 +48,20 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   Timer? _searchDebounce;
   final List<AppUser> _selectedUsers = [];
   bool _participantsHasError = false;
-
+  bool? _isPrivate;
   late final List<_FieldConfig> _fields = [
     _FieldConfig(
-      title: 'Chat Name \t*',
-      hintText: 'Enter chat name',
+      title: 'Group Name \t*',
+      hintText: 'Enter group name',
       controller: _chatNameController,
       icon: Icons.tag_rounded,
       isRequired: true,
-      errorText: 'Chat name is required',
+      errorText: 'Group name is required',
       hasError: false,
     ),
     _FieldConfig(
       title: 'Description (Optional)',
-      hintText: "What's the chat about?",
+      hintText: "What's the group about?",
       controller: _chatDescriptionController,
       hasError: false,
     ),
@@ -122,7 +122,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     });
   }
 
-  void _onCreateChat() {
+  void _onCreateGroup() {
     if (!_validate()) return;
 
     final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
@@ -138,6 +138,8 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
             ? null
             : _chatDescriptionController.text.trim(),
         participantsIds: participantsIds.toList(),
+        currentUserUid: currentUserUid ?? '',
+        isPrivate: _isPrivate ?? true,
       ),
     );
   }
@@ -178,8 +180,12 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
               spacing: 10.h,
               children: [
                 const SizedBox(),
-                const _AppBarCreateChatWidget(),
+                const _AppBarCreateGroupWidget(),
                 const Divider(color: AppColors.borderColor, thickness: 2),
+
+                _PrivatePublicSelectorWidget(
+                  onChanged: (isPrivate) => _isPrivate = isPrivate,
+                ),
 
                 // ── Поля ──
                 Padding(
@@ -212,13 +218,168 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                 ),
 
                 Padding(
-                  padding: EdgeInsets.fromLTRB(2.w, 60.h, 2.w, 0),
-                  child: _BottomContent(onCreateChat: _onCreateChat),
+                  padding: EdgeInsets.fromLTRB(2.w, 40.h, 2.w, 0),
+                  child: _BottomContent(onCreateGroup: _onCreateGroup),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PrivatePublicSelectorWidget extends StatefulWidget {
+  final bool? isPrivate;
+  final ValueChanged<bool>? onChanged;
+
+  const _PrivatePublicSelectorWidget({this.isPrivate, this.onChanged});
+
+  @override
+  State<_PrivatePublicSelectorWidget> createState() =>
+      _PrivatePublicSelectorWidgetState();
+}
+
+class _PrivatePublicSelectorWidgetState
+    extends State<_PrivatePublicSelectorWidget> {
+  late bool isPrivate;
+
+  @override
+  void initState() {
+    super.initState();
+    isPrivate = widget.isPrivate ?? true; // приват по дефолту
+  }
+
+  void _toggle(bool value) {
+    setState(() {
+      isPrivate = value;
+    });
+    if (widget.onChanged != null) {
+      widget.onChanged!(isPrivate);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 10.w,
+        children: [
+          // Private
+          GestureDetector(
+            onTap: () => _toggle(true),
+            child: AnimatedContainer(
+              width: 150.w,
+              height: 60.h,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: isPrivate
+                    ? AppColors.chatText.withValues(alpha: 0.5)
+                    : AppColors.chatText.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border(
+                  top: BorderSide(
+                    color: isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.8)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: 4.w,
+                  ),
+                  right: BorderSide(
+                    color: isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.8)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: isPrivate ? 8.w : 4.w,
+                  ),
+                  bottom: BorderSide(
+                    color: isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.8)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: 4.w,
+                  ),
+                  left: BorderSide(
+                    color: isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.8)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: 4.w,
+                  ),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  'Private',
+                  style: TextStyle(
+                    color: isPrivate
+                        ? AppColors.text
+                        : AppColors.chatText, // серый для неактивного
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'SpaceGrot',
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Public
+          GestureDetector(
+            onTap: () => _toggle(false),
+            child: AnimatedContainer(
+              width: 150.w,
+              height: 60.h,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: !isPrivate
+                    ? AppColors.chatText.withValues(alpha: 0.5)
+                    : AppColors.chatText.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border(
+                  top: BorderSide(
+                    color: !isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.6)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: 4.w,
+                  ),
+                  right: BorderSide(
+                    color: !isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.6)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: 4.w,
+                  ),
+                  bottom: BorderSide(
+                    color: !isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.6)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: 4.w,
+                  ),
+                  left: BorderSide(
+                    color: !isPrivate
+                        ? AppColors.chatText.withValues(alpha: 0.6)
+                        : AppColors.chatText.withValues(alpha: 0.3),
+                    width: !isPrivate ? 8.w : 4.w,
+                  ),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  'Public',
+                  style: TextStyle(
+                    color: isPrivate
+                        ? AppColors.chatText
+                        : AppColors.text, // серый для неактивного
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'SpaceGrot',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -402,8 +563,8 @@ class _ParticipantsSelectorSection extends StatelessWidget {
 }
 
 // ── AppBar ──
-class _AppBarCreateChatWidget extends StatelessWidget {
-  const _AppBarCreateChatWidget();
+class _AppBarCreateGroupWidget extends StatelessWidget {
+  const _AppBarCreateGroupWidget();
 
   @override
   Widget build(BuildContext context) {
@@ -413,7 +574,7 @@ class _AppBarCreateChatWidget extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           icon: Icon(Icons.arrow_back, color: AppColors.text),
         ),
-        const Expanded(child: CreateChatTitleWidget()),
+        const Expanded(child: CreateGroupTitleWidget()),
       ],
     );
   }
@@ -421,19 +582,18 @@ class _AppBarCreateChatWidget extends StatelessWidget {
 
 // ── Bottom content ──
 class _BottomContent extends StatelessWidget {
-  final VoidCallback onCreateChat;
+  final VoidCallback onCreateGroup;
 
-  const _BottomContent({required this.onCreateChat});
+  const _BottomContent({required this.onCreateGroup});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       spacing: 20.h,
       children: [
-        CreateChatButtonWidget(onTap: onCreateChat),
-        SizedBox(height: 10.h),
+        SizedBox(height: 15.h),
+        CreateGroupButtonWidget(onTap: onCreateGroup),
         const Divider(color: AppColors.borderColor, thickness: 2),
-        SizedBox(height: 10.h),
         Container(
           width: 250,
           padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 24.w),

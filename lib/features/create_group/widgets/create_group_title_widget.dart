@@ -2,8 +2,8 @@ import 'package:collabix/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class CreateChatTitleWidget extends StatelessWidget {
-  const CreateChatTitleWidget({super.key});
+class CreateGroupTitleWidget extends StatelessWidget {
+  const CreateGroupTitleWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +13,7 @@ class CreateChatTitleWidget extends StatelessWidget {
       children: [
         Image.asset('assets/images/iimg.png'),
         Text(
-          'Create Chat',
+          'Create Group',
           style: TextStyle(
             color: AppColors.text,
             fontSize: 24.sp,

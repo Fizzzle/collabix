@@ -23,6 +23,8 @@ class CreateGroupBloc extends Bloc<CreateGroupEvent, CreateGroupState> {
         chatName: event.chatName,
         chatDescription: event.chatDescription ?? '',
         participants: event.participantsIds,
+        currentUserUid: event.currentUserUid,
+        isPrivate: event.isPrivate,
       );
       emit(CreateGroupSuccess(group: group));
     } catch (e) {
