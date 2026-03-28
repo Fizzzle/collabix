@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:collabix/features/create_chat/bloc/create_chat_bloc/create_chat_bloc.dart';
-import 'package:collabix/features/create_chat/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
-import 'package:collabix/features/create_chat/data/datasource/create_chat_remote_datasource.dart';
-import 'package:collabix/features/create_chat/data/datasource/user_remote_data_source.dart';
-import 'package:collabix/features/create_chat/data/repository/create_chat_repository_impl.dart';
-import 'package:collabix/features/create_chat/data/repository/user_repo_impl.dart';
-import 'package:collabix/features/create_chat/domain/usecase/create_chat_use_case.dart';
-import 'package:collabix/features/create_chat/domain/usecase/fetch_all_users_use_case.dart';
+import 'package:collabix/features/create_group/bloc/create_group_bloc/create_group_bloc.dart';
+import 'package:collabix/features/create_group/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
+import 'package:collabix/features/create_group/data/datasource/create_group_remote_datasource.dart';
+import 'package:collabix/features/create_group/data/datasource/user_remote_data_source.dart';
+import 'package:collabix/features/create_group/data/repository/create_group_repository_impl.dart';
+import 'package:collabix/features/create_group/data/repository/user_repo_impl.dart';
+import 'package:collabix/features/create_group/domain/usecase/create_group_use_case.dart';
+import 'package:collabix/features/create_group/domain/usecase/fetch_all_users_use_case.dart';
 import 'package:collabix/features/home/presentation/home_screen.dart';
 import 'package:collabix/features/login/presentation/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,9 +20,9 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firestore = FirebaseFirestore.instance;
-    final createChatRemote = ChatCreationRemoteDataSourceImpl(firestore);
-    final createChatRepository = CreateChatRepositoryImpl(createChatRemote);
-    final createChatUseCase = CreateChatUseCase(createChatRepository);
+    final createGroupRemote = GroupCreationRemoteDataSourceImpl(firestore);
+    final createGroupRepository = CreateGroupRepositoryImpl(createGroupRemote);
+    final createGroupUseCase = CreateGroupUseCase(createGroupRepository);
 
     final fetchAllUsersRemote = UserRemoteDataSourceImpl(firestore);
     final fetchAllUserRepository = UserRepoImpl(fetchAllUsersRemote);
@@ -36,8 +36,8 @@ class App extends StatelessWidget {
         return MultiBlocProvider(
           providers: [
             //1. Create Chat Bloc
-            BlocProvider<CreateChatBloc>(
-              create: (_) => CreateChatBloc(createChatUseCase),
+            BlocProvider<CreateGroupBloc>(
+              create: (_) => CreateGroupBloc(createGroupUseCase),
             ),
 
             //2. Fetch All Users Bloc

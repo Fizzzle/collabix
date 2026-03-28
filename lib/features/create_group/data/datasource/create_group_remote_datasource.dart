@@ -1,28 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:collabix/features/create_chat/data/model/create_chat_model.dart';
+import 'package:collabix/features/create_group/data/model/create_group_model.dart';
 
-abstract class CreateChatRemoteDataSource {
-  Future<CreateChatModel> createChat(
+abstract class CreateGroupRemoteDataSource {
+  Future<CreateGroupModel> createGroup(
     String chatName,
     String chatDescription,
     List<String> participants,
   );
 }
 
-class ChatCreationRemoteDataSourceImpl implements CreateChatRemoteDataSource {
+class GroupCreationRemoteDataSourceImpl implements CreateGroupRemoteDataSource {
   final FirebaseFirestore firestore;
 
-  ChatCreationRemoteDataSourceImpl(this.firestore);
+  GroupCreationRemoteDataSourceImpl(this.firestore);
 
   @override
-  Future<CreateChatModel> createChat(
+  Future<CreateGroupModel> createGroup(
     String chatName,
     String chatDescription,
     List<String> participants,
   ) async {
-    final doc = firestore.collection('chats').doc();
+    final doc = firestore
+        .collection(participants.length > 2 ? 'group' : 'dirrect')
+        .doc();
 
-    final chat = CreateChatModel(
+    final chat = CreateGroupModel(
       id: doc.id,
       chatName: chatName,
       chatDescription: chatDescription,

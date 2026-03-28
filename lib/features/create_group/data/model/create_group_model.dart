@@ -1,7 +1,7 @@
-import 'package:collabix/features/create_chat/domain/entity/create_chat_entity.dart';
+import 'package:collabix/features/create_group/domain/entity/create_group_entity.dart';
 
-class CreateChatModel extends CreateChatEntity {
-  CreateChatModel({
+class CreateGroupModel extends CreateGroupEntity {
+  CreateGroupModel({
     required super.id,
     required super.chatName,
     required super.chatDescription,
@@ -9,8 +9,8 @@ class CreateChatModel extends CreateChatEntity {
     required super.createdAt,
   });
 
-  factory CreateChatModel.fromJson(Map<String, dynamic> json) {
-    return CreateChatModel(
+  factory CreateGroupModel.fromJson(Map<String, dynamic> json) {
+    return CreateGroupModel(
       id: json['id'],
       chatName: json['chatName'],
       chatDescription: json['chatDescription'],

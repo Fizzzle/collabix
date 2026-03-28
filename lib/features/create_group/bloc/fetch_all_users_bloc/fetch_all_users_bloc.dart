@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:collabix/core/auth/models/app_user.dart';
-import 'package:collabix/features/create_chat/domain/usecase/fetch_all_users_use_case.dart';
+import 'package:collabix/features/create_group/domain/usecase/fetch_all_users_use_case.dart';
 import 'package:meta/meta.dart';
 
 part 'fetch_all_users_event.dart';

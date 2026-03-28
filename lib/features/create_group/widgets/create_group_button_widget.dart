@@ -1,5 +1,5 @@
 import 'package:collabix/core/constants/app_colors.dart';
-import 'package:collabix/features/create_chat/bloc/create_chat_bloc/create_chat_bloc.dart';
+import 'package:collabix/features/create_group/bloc/create_group_bloc/create_group_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,9 +11,9 @@ class CreateChatButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CreateChatBloc, CreateChatState>(
+    return BlocBuilder<CreateGroupBloc, CreateGroupState>(
       builder: (context, state) {
-        final isLoading = state is CreateChatLoading;
+        final isLoading = state is CreateGroupLoading;
 
         return GestureDetector(
           onTap: isLoading ? null : onTap,
@@ -59,7 +59,7 @@ class CreateChatButtonWidget extends StatelessWidget {
                           ),
                         )
                       : Text(
-                          'Create Chat',
+                          'Create Group',
                           style: TextStyle(
                             color: AppColors.background,
                             fontSize: 22.sp,

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/features/conversation/presentation/conversation_screen.dart';
-import 'package:collabix/features/create_chat/presentation/create_chat_screen.dart';
+import 'package:collabix/features/create_group/presentation/create_group_screen.dart';
 import 'package:collabix/features/home/widgets/name_and_logo_widget.dart';
 import 'package:collabix/features/home/widgets/profile_widget.dart';
 import 'package:collabix/features/home/widgets/user_chat_info_widget.dart';

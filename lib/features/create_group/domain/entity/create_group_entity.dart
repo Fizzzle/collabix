@@ -1,11 +1,11 @@
-abstract class CreateChatEntity {
+abstract class CreateGroupEntity {
   final String id;
   final String chatName;
   final String chatDescription;
   final List<String> participants;
   final DateTime createdAt;
 
-  CreateChatEntity({
+  CreateGroupEntity({
     required this.id,
     required this.chatName,
     required this.chatDescription,

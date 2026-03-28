@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/core/auth/models/app_user.dart';
-import 'package:collabix/features/create_chat/bloc/create_chat_bloc/create_chat_bloc.dart';
-import 'package:collabix/features/create_chat/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
-import 'package:collabix/features/create_chat/widgets/create_chat_button_widget.dart';
-import 'package:collabix/features/create_chat/widgets/create_chat_title_widget.dart';
-import 'package:collabix/features/create_chat/widgets/text_field_and_title_widget.dart';
+import 'package:collabix/core/constants/app_colors.dart';
+import 'package:collabix/features/create_group/bloc/create_group_bloc/create_group_bloc.dart';
+import 'package:collabix/features/create_group/bloc/fetch_all_users_bloc/fetch_all_users_bloc.dart';
+import 'package:collabix/features/create_group/widgets/create_chat_title_widget.dart';
+import 'package:collabix/features/create_group/widgets/create_group_button_widget.dart';
+import 'package:collabix/features/create_group/widgets/text_field_and_title_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -131,8 +131,8 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
       participantsIds.add(currentUserUid);
     }
 
-    context.read<CreateChatBloc>().add(
-      CreateChatRequestedEvent(
+    context.read<CreateGroupBloc>().add(
+      CreateGroupRequestedEvent(
         chatName: _chatNameController.text.trim(),
         chatDescription: _chatDescriptionController.text.trim().isEmpty
             ? null
@@ -154,11 +154,11 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CreateChatBloc, CreateChatState>(
+    return BlocListener<CreateGroupBloc, CreateGroupState>(
       listener: (context, state) {
-        if (state is CreateChatSuccess) {
+        if (state is CreateGroupSuccess) {
           Navigator.pop(context);
-        } else if (state is CreateChatFailure) {
+        } else if (state is CreateGroupFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.error),
@@ -345,8 +345,11 @@ class _ParticipantsSelectorSection extends StatelessWidget {
             }
 
             final filtered = state.users.where((user) {
-              final isCurrent = currentUserUid != null && user.uid == currentUserUid;
-              final alreadySelected = selectedUsers.any((u) => u.uid == user.uid);
+              final isCurrent =
+                  currentUserUid != null && user.uid == currentUserUid;
+              final alreadySelected = selectedUsers.any(
+                (u) => u.uid == user.uid,
+              );
               return !isCurrent && !alreadySelected;
             }).toList();
 
