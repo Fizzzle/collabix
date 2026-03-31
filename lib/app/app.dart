@@ -35,12 +35,9 @@ class App extends StatelessWidget {
       builder: (_, __) {
         return MultiBlocProvider(
           providers: [
-            //1. Create Chat Bloc
             BlocProvider<CreateGroupBloc>(
               create: (_) => CreateGroupBloc(createGroupUseCase),
             ),
-
-            //2. Fetch All Users Bloc
             BlocProvider<FetchAllUsersBloc>(
               create: (_) => FetchAllUsersBloc(fetchAllUsersUseCase),
             ),

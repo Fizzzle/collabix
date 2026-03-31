@@ -1,19 +1,35 @@
 import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/core/constants/app_const.dart';
-import 'package:collabix/features/conversation/screens/chat/chat_screen.dart';
+import 'package:collabix/features/conversation/screens/chat/bloc/chat_bloc.dart';
+import 'package:collabix/features/conversation/screens/chat/data/datasource/chat_remote_datasource.dart';
+import 'package:collabix/features/conversation/screens/chat/data/repository/chat_repository_impl.dart';
+import 'package:collabix/features/conversation/screens/chat/domain/usecase/fetch_messages_by_chat.dart';
+import 'package:collabix/features/conversation/screens/chat/domain/usecase/send_message_use_case.dart';
+import 'package:collabix/features/conversation/screens/chat/presentation/chat_screen.dart';
 import 'package:collabix/features/conversation/screens/dashboard/dashboard_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 
 /// Chat screen
 class ConversationScreen extends StatefulWidget {
+  /// Firestore group id — same as `chats/{chatId}/messages` root.
+  final String chatId;
+
   /// Conversation title
   final String conversationTitle;
 
   /// Constructor
-  const ConversationScreen({required this.conversationTitle, super.key});
+  const ConversationScreen({
+    required this.chatId,
+    required this.conversationTitle,
+    super.key,
+  });
 
   @override
   State<ConversationScreen> createState() => _ConversationScreenState();
@@ -25,55 +41,125 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   int _activeTabIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_restoreLastPanelAndSheet());
+  }
+
+  Future<void> _restoreLastPanelAndSheet() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      _scheduleSheetJump(chatExpanded: true);
+      return;
+    }
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('Groups')
+          .doc(widget.chatId)
+          .get();
+      if (!mounted) return;
+      final panel =
+          (doc.data()?['lastPanel'] as String? ?? 'chat').toLowerCase();
+      final board = panel == 'board';
+      setState(() => _activeTabIndex = board ? 1 : 0);
+      _scheduleSheetJump(chatExpanded: !board);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _activeTabIndex = 0);
+      _scheduleSheetJump(chatExpanded: true);
+    }
+  }
+
+  void _scheduleSheetJump({required bool chatExpanded}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final c = _draggableScrollableController;
+      if (!c.isAttached) return;
+      c.jumpTo(
+        chatExpanded
+            ? AppConst.maxChildSize
+            : AppConst.boardPeekChildSize,
+      );
+    });
+  }
+
   void _changeTab(int index) {
     setState(() => _activeTabIndex = index);
 
     if (index == 1) {
-      ///  свернуть чат
       _draggableScrollableController.animateTo(
-        AppConst.minChildSize,
+        AppConst.boardPeekChildSize,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      /// раскрыть чат
       _draggableScrollableController.animateTo(
         AppConst.maxChildSize,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      unawaited(
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('Groups')
+            .doc(widget.chatId)
+            .set(
+              {'lastPanel': index == 0 ? 'chat' : 'board'},
+              SetOptions(merge: true),
+            ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.upcomingMessageText,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
-        child: _CustomAppBar(conversationTitle: widget.conversationTitle),
-      ),
-      body: Stack(
-        children: [
-          ///  BOARD НА ФОНЕ
-          const Positioned.fill(child: DashboardScreen()),
+    final firestore = FirebaseFirestore.instance;
+    final chatRemote = ChatRemoteDataSourceImpl(firestore);
+    final chatRepo = ChatRepositoryImpl(firestore, chatRemote);
 
-          /// CHAT PANEL
-          ChatScreen(
-            draggableScrollableController: _draggableScrollableController,
-          ),
+    return BlocProvider(
+      create: (_) => ChatBloc(
+        SendMessageUseCase(chatRepo),
+        FetchMessagesByChatUseCase(chatRepo),
+      )..add(FetchMessagesByChatEvent(chatId: widget.chatId)),
+      child: Scaffold(
+        backgroundColor: AppColors.upcomingMessageText,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(64),
+          child: _CustomAppBar(conversationTitle: widget.conversationTitle),
+        ),
+        body: Stack(
+          children: [
+            ///  BOARD НА ФОНЕ
+            const Positioned.fill(child: DashboardScreen()),
 
-          /// Custom tab bar
-          Positioned(
-            top: 16.h,
-            left: 0,
-            right: 0,
-            child: _CustomTabBar(
-              activeIndex: _activeTabIndex,
-              onTabChanged: _changeTab,
+            /// CHAT PANEL
+            ChatScreen(
+              chatId: widget.chatId,
+              conversationTabIndex: _activeTabIndex,
+              draggableScrollableController: _draggableScrollableController,
             ),
-          ),
-        ],
+
+            /// Custom tab bar
+            Positioned(
+              top: 16.h,
+              left: 0,
+              right: 0,
+              child: _CustomTabBar(
+                activeIndex: _activeTabIndex,
+                onTabChanged: _changeTab,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -281,7 +367,9 @@ class _CustomAppBar extends StatelessWidget {
             backgroundColor: AppColors.boardText,
             child: Center(
               child: Text(
-                conversationTitle[0].toUpperCase(),
+                conversationTitle.isNotEmpty
+                    ? conversationTitle[0].toUpperCase()
+                    : '?',
                 style: TextStyle(
                   color: AppColors.background,
                   fontSize: 18.sp,
@@ -292,13 +380,17 @@ class _CustomAppBar extends StatelessWidget {
             ),
           ),
           SizedBox(width: 10.w),
-          Text(
-            conversationTitle,
-            style: TextStyle(
-              color: AppColors.text,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'SpaceGrot',
+          Expanded(
+            child: Text(
+              conversationTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.text,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'SpaceGrot',
+              ),
             ),
           ),
         ],

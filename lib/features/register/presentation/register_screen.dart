@@ -10,7 +10,7 @@ import 'package:collabix/features/register/domain/services/register_service.dart
 import 'package:collabix/features/register/widgets/reg_bottom_right_blur_widget.dart';
 import 'package:collabix/features/register/widgets/reg_second_bottom_right_blur_widget.dart';
 import 'package:collabix/features/register/widgets/reg_top_left_blur_widget.dart';
-import 'package:collabix/widgets/social_button_widget.dart';
+import 'package:collabix/components/social_button_widget.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

@@ -14,7 +14,7 @@ import 'package:collabix/features/login/widgets/log_bottom_right_blur_widget.dar
 import 'package:collabix/features/login/widgets/log_second_bottom_right_blur_widget.dart';
 import 'package:collabix/features/login/widgets/log_top_left_blur_widget.dart';
 import 'package:collabix/features/register/presentation/register_screen.dart';
-import 'package:collabix/widgets/social_button_widget.dart';
+import 'package:collabix/components/social_button_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 

@@ -33,7 +33,25 @@ class GroupCreationRemoteDataSourceImpl implements CreateGroupRemoteDataSource {
       isPrivate: isPrivate,
     );
 
-    await doc.set(chat.toJson());
+    final batch = firestore.batch();
+    batch.set(doc, chat.toJson());
+
+    for (final uid in participants) {
+      final membershipRef = firestore
+          .collection('users')
+          .doc(uid)
+          .collection('Groups')
+          .doc(doc.id);
+      batch.set(membershipRef, {
+        'groupId': doc.id,
+        'chatName': chatName,
+        'chatDescription': chatDescription,
+        'joinedAt': FieldValue.serverTimestamp(),
+        'lastPanel': 'chat',
+      });
+    }
+
+    await batch.commit();
 
     return chat;
   }
