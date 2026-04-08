@@ -46,6 +46,7 @@ class _ChatScreenState extends State<ChatScreen>
   late AnimationController _lottieController;
   final TextEditingController _messageController = TextEditingController();
   late final ValueNotifier<double> _sheetExtent;
+  MessageEntity? _editingMessage; // Храним сообщение, которое редактируем
 
   @override
   void initState() {
@@ -75,43 +76,97 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  void _sendMessage() {
+  void _sendMessageOrEditMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final messageId = FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .collection('messages')
-        .doc()
-        .id;
+    if (_editingMessage != null) {
+      // Обновляем сообщение
+      final updatedMessage = MessageModel(
+        messageId: _editingMessage!.messageId, // Оставляем тот же ID
+        content: text, // Новый текст из TextField
+        senderId: _editingMessage!.senderId,
+        receiverId: _editingMessage!.receiverId,
+        chatId: _editingMessage!.chatId,
+        isRead: _editingMessage!.isRead,
+        createdAt: _editingMessage!.createdAt, // Сохраняем оригинальную дату
+        senderName: _editingMessage!.senderName,
+      );
 
-    final displayName = user.displayName?.trim();
-    final email = user.email?.trim();
-    final senderName = (displayName != null && displayName.isNotEmpty)
-        ? displayName
-        : (email ?? user.uid);
+      context.read<ChatBloc>().add(
+        UpdateMessageEvent(chatId: widget.chatId, message: updatedMessage),
+      );
 
-    context.read<ChatBloc>().add(
-      SendMessageEvent(
-        message: MessageModel(
-          messageId: messageId,
-          content: text,
-          senderId: user.uid,
-          receiverId: widget.chatId,
-          chatId: widget.chatId,
-          isRead: false,
-          createdAt: DateTime.now(),
-          senderName: senderName,
+      // Сбрасываем режим редактирования
+      setState(() {
+        _editingMessage = null;
+      });
+    } else {
+      final messageId = FirebaseFirestore.instance
+          .collection('chats')
+          .doc(widget.chatId)
+          .collection('messages')
+          .doc()
+          .id;
+
+      final displayName = user.displayName?.trim();
+      final email = user.email?.trim();
+      final senderName = (displayName != null && displayName.isNotEmpty)
+          ? displayName
+          : (email ?? user.uid);
+
+      context.read<ChatBloc>().add(
+        SendMessageEvent(
+          message: MessageModel(
+            messageId: messageId,
+            content: text,
+            senderId: user.uid,
+            receiverId: widget.chatId,
+            chatId: widget.chatId,
+            isRead: false,
+            createdAt: DateTime.now(),
+            senderName: senderName,
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     _messageController.clear();
     FocusScope.of(context).unfocus();
+
+    // final messageId = FirebaseFirestore.instance
+    //     .collection('chats')
+    //     .doc(widget.chatId)
+    //     .collection('messages')
+    //     .doc()
+    //     .id;
+
+    // final displayName = user.displayName?.trim();
+    // final email = user.email?.trim();
+    // final senderName = (displayName != null && displayName.isNotEmpty)
+    //     ? displayName
+    //     : (email ?? user.uid);
+
+    // context.read<ChatBloc>().add(
+    //   SendMessageEvent(
+    //     message: MessageModel(
+    //       messageId: messageId,
+    //       content: text,
+    //       senderId: user.uid,
+    //       receiverId: widget.chatId,
+    //       chatId: widget.chatId,
+    //       isRead: false,
+    //       createdAt: DateTime.now(),
+    //       senderName: senderName,
+    //     ),
+    //   ),
+    // );
+
+    // _messageController.clear();
+    // FocusScope.of(context).unfocus();
   }
 
   void _showContextMenu(
@@ -169,6 +224,10 @@ class _ChatScreenState extends State<ChatScreen>
     ).then((value) {
       if (value == 'edit') {
         /* Логика редактирования */
+        setState(() {
+          _editingMessage = message;
+          _messageController.text = message.content;
+        });
       }
       if (value == 'delete') {
         /* Логика удаления */
@@ -405,7 +464,8 @@ class _ChatScreenState extends State<ChatScreen>
                                     minLines: 1,
                                     maxLines: 4,
                                     textInputAction: TextInputAction.send,
-                                    onSubmitted: (_) => _sendMessage(),
+                                    onSubmitted: (_) =>
+                                        _sendMessageOrEditMessage(),
                                     decoration: InputDecoration(
                                       border: InputBorder.none,
                                       hintText: 'Message',
@@ -418,7 +478,7 @@ class _ChatScreenState extends State<ChatScreen>
                                   ),
                                 ),
                                 IconButton(
-                                  onPressed: _sendMessage,
+                                  onPressed: _sendMessageOrEditMessage,
                                   icon: Icon(
                                     Icons.send,
                                     color: AppColors.upcomingMessageText,

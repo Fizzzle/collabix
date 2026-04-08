@@ -9,6 +9,7 @@ import 'package:collabix/features/conversation/screens/chat/data/repository/chat
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/delete_message_use_case.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/fetch_messages_by_chat.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/send_message_use_case.dart';
+import 'package:collabix/features/conversation/screens/chat/domain/usecase/update_message_use_case.dart';
 import 'package:collabix/features/conversation/screens/chat/presentation/chat_screen.dart';
 import 'package:collabix/features/conversation/screens/dashboard/dashboard_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -128,6 +129,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         SendMessageUseCase(chatRepo),
         FetchMessagesByChatUseCase(chatRepo),
         DeleteMessageUseCase(chatRepo),
+        UpdateMessageUseCase(chatRepo),
       )..add(FetchMessagesByChatEvent(chatId: widget.chatId)),
       child: Scaffold(
         backgroundColor: AppColors.upcomingMessageText,

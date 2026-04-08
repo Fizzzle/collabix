@@ -6,6 +6,7 @@ import 'package:collabix/features/conversation/screens/chat/domain/entity/messag
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/delete_message_use_case.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/fetch_messages_by_chat.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/send_message_use_case.dart';
+import 'package:collabix/features/conversation/screens/chat/domain/usecase/update_message_use_case.dart';
 import 'package:meta/meta.dart';
 
 part 'chat_event.dart';
@@ -15,16 +16,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final SendMessageUseCase _sendMessage;
   final FetchMessagesByChatUseCase _fetchMessages;
   final DeleteMessageUseCase _deleteMessage;
+  final UpdateMessageUseCase _updateMessage;
 
   StreamSubscription<List<MessageModel>>? _streamSubscription;
 
-  ChatBloc(this._sendMessage, this._fetchMessages, this._deleteMessage)
-    : super(ChatInitial()) {
+  ChatBloc(
+    this._sendMessage,
+    this._fetchMessages,
+    this._deleteMessage,
+    this._updateMessage,
+  ) : super(ChatInitial()) {
     on<FetchMessagesByChatEvent>(_onFetchMessagesByChat);
     on<SendMessageEvent>(_onSendMessage);
     on<ChatMessagesSnapshotEvent>(_onMessagesSnapshot);
     on<ChatMessagesStreamErrorEvent>(_onMessagesStreamError);
     on<DeleteMessageEvent>(_onDeleteMessage);
+    on<UpdateMessageEvent>(_onUpdateMessage);
   }
 
   void _onMessagesSnapshot(
@@ -87,6 +94,26 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     try {
       await _sendMessage.call(event.message);
+    } catch (e) {
+      if (isClosed) return;
+      final cur = state;
+      if (cur is ChatLoaded) {
+        emit(ChatLoaded(messages: cur.messages));
+      } else {
+        emit(ChatFailure(e.toString()));
+      }
+    }
+  }
+
+  Future<void> _onUpdateMessage(
+    UpdateMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _updateMessage.call(event.chatId, event.message);
+      if (!isClosed) {
+        add(UpdateMessageEvent(chatId: event.chatId, message: event.message));
+      }
     } catch (e) {
       if (isClosed) return;
       final cur = state;

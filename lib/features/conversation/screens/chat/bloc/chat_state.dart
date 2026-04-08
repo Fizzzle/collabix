@@ -19,3 +19,13 @@ class ChatFailure extends ChatState {
 }
 
 class ChatMessageDeleted extends ChatState {}
+
+class ChatMessageUpdated extends ChatState {
+  final MessageEntity message;
+  ChatMessageUpdated({required this.message});
+}
+
+class ChatMessageUpdateFailure extends ChatState {
+  final String message;
+  ChatMessageUpdateFailure({required this.message});
+}
