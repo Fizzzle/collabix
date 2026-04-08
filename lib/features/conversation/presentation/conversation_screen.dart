@@ -6,6 +6,7 @@ import 'package:collabix/core/constants/app_const.dart';
 import 'package:collabix/features/conversation/screens/chat/bloc/chat_bloc.dart';
 import 'package:collabix/features/conversation/screens/chat/data/datasource/chat_remote_datasource.dart';
 import 'package:collabix/features/conversation/screens/chat/data/repository/chat_repository_impl.dart';
+import 'package:collabix/features/conversation/screens/chat/domain/usecase/delete_message_use_case.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/fetch_messages_by_chat.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/send_message_use_case.dart';
 import 'package:collabix/features/conversation/screens/chat/presentation/chat_screen.dart';
@@ -61,8 +62,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
           .doc(widget.chatId)
           .get();
       if (!mounted) return;
-      final panel =
-          (doc.data()?['lastPanel'] as String? ?? 'chat').toLowerCase();
+      final panel = (doc.data()?['lastPanel'] as String? ?? 'chat')
+          .toLowerCase();
       final board = panel == 'board';
       setState(() => _activeTabIndex = board ? 1 : 0);
       _scheduleSheetJump(chatExpanded: !board);
@@ -79,9 +80,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       final c = _draggableScrollableController;
       if (!c.isAttached) return;
       c.jumpTo(
-        chatExpanded
-            ? AppConst.maxChildSize
-            : AppConst.boardPeekChildSize,
+        chatExpanded ? AppConst.maxChildSize : AppConst.boardPeekChildSize,
       );
     });
   }
@@ -111,10 +110,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
             .doc(uid)
             .collection('Groups')
             .doc(widget.chatId)
-            .set(
-              {'lastPanel': index == 0 ? 'chat' : 'board'},
-              SetOptions(merge: true),
-            ),
+            .set({
+              'lastPanel': index == 0 ? 'chat' : 'board',
+            }, SetOptions(merge: true)),
       );
     }
   }
@@ -129,6 +127,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       create: (_) => ChatBloc(
         SendMessageUseCase(chatRepo),
         FetchMessagesByChatUseCase(chatRepo),
+        DeleteMessageUseCase(chatRepo),
       )..add(FetchMessagesByChatEvent(chatId: widget.chatId)),
       child: Scaffold(
         backgroundColor: AppColors.upcomingMessageText,

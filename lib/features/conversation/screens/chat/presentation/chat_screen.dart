@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:collabix/core/constants/app_const.dart';
 import 'package:collabix/core/ui/stable_accent_color.dart';
@@ -5,7 +6,6 @@ import 'package:collabix/features/conversation/screens/chat/bloc/chat_bloc.dart'
 import 'package:collabix/features/conversation/screens/chat/data/model/message_model.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/entity/message_entity.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -96,23 +96,91 @@ class _ChatScreenState extends State<ChatScreen>
         : (email ?? user.uid);
 
     context.read<ChatBloc>().add(
-          SendMessageEvent(
-            message: MessageModel(
-              messageId: messageId,
-              content: text,
-              senderId: user.uid,
-              receiverId: widget.chatId,
-              chatId: widget.chatId,
-              isRead: false,
-              createdAt: DateTime.now(),
-              senderName: senderName,
-            ),
-          ),
-        );
+      SendMessageEvent(
+        message: MessageModel(
+          messageId: messageId,
+          content: text,
+          senderId: user.uid,
+          receiverId: widget.chatId,
+          chatId: widget.chatId,
+          isRead: false,
+          createdAt: DateTime.now(),
+          senderName: senderName,
+        ),
+      ),
+    );
 
     _messageController.clear();
     FocusScope.of(context).unfocus();
   }
+
+  void _showContextMenu(
+    BuildContext context,
+    TapDownDetails details,
+    MessageEntity message,
+  ) async {
+    // Получаем координаты нажатия
+    final position = details.globalPosition;
+
+    await showMenu(
+      color: AppColors.backgroundItemColor,
+      context: context,
+      // Указываем область, где появится меню
+      position: RelativeRect.fromLTRB(
+        position.dx - 150.0,
+        position.dy - 150.0,
+        position.dx - 50.0,
+        position.dy - 50.0,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit, color: Colors.blue),
+            title: Text(
+              'Edit',
+              style: TextStyle(
+                color: AppColors.text,
+                fontSize: 16.sp,
+                fontFamily: 'SpaceGrot',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete, color: Colors.red),
+            title: Text(
+              'Delete',
+              style: TextStyle(
+                color: AppColors.text,
+                fontSize: 16.sp,
+                fontFamily: 'SpaceGrot',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ],
+      elevation: 8.0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    ).then((value) {
+      if (value == 'edit') {
+        /* Логика редактирования */
+      }
+      if (value == 'delete') {
+        /* Логика удаления */
+        final messageId = message.messageId;
+        context.read<ChatBloc>().add(
+          DeleteMessageEvent(chatId: widget.chatId, messageId: messageId),
+        );
+      }
+    });
+  }
+
+  TapDownDetails? _tapDetails; // Храним детали нажатия
 
   @override
   void dispose() {
@@ -179,217 +247,232 @@ class _ChatScreenState extends State<ChatScreen>
                       return ListView(
                         controller: scrollController,
                         physics: listPhysics,
-                      padding: EdgeInsets.only(
-                        top: listTopPad,
-                        bottom: inputBlockHeight + 12.h,
-                      ),
-                      children: [
-                        SizedBox(height: 24.h),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w),
-                          child: Text(
-                            state.message,
-                            style: const TextStyle(color: Colors.redAccent),
-                          ),
+                        padding: EdgeInsets.only(
+                          top: listTopPad,
+                          bottom: inputBlockHeight + 12.h,
                         ),
-                      ],
-                    );
-                  }
+                        children: [
+                          SizedBox(height: 24.h),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16.w),
+                            child: Text(
+                              state.message,
+                              style: const TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
 
-                  final messages = state is ChatLoaded ? state.messages : null;
-                  final showLoading =
-                      state is ChatLoading || (state is ChatInitial);
+                    final messages = state is ChatLoaded
+                        ? state.messages
+                        : null;
+                    final showLoading =
+                        state is ChatLoading || (state is ChatInitial);
 
-                  if (showLoading && messages == null) {
-                    return ListView(
+                    if (showLoading && messages == null) {
+                      return ListView(
+                        controller: scrollController,
+                        physics: listPhysics,
+                        padding: EdgeInsets.only(
+                          top: listTopPad,
+                          bottom: inputBlockHeight + 12.h,
+                        ),
+                        children: [
+                          SizedBox(height: 80.h),
+                          const Center(child: CircularProgressIndicator()),
+                        ],
+                      );
+                    }
+
+                    final list = messages ?? const <MessageEntity>[];
+
+                    return ListView.builder(
                       controller: scrollController,
                       physics: listPhysics,
+                      reverse: true,
                       padding: EdgeInsets.only(
+                        left: 12.w,
+                        right: 12.w,
                         top: listTopPad,
                         bottom: inputBlockHeight + 12.h,
                       ),
-                      children: [
-                        SizedBox(height: 80.h),
-                        const Center(child: CircularProgressIndicator()),
-                      ],
+                      itemCount: list.length,
+                      itemBuilder: (context, index) {
+                        final message = list[index];
+                        final isMine =
+                            currentUid != null &&
+                            message.senderId == currentUid;
+
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 8.h),
+                          child: GestureDetector(
+                            onTapDown: (details) => _tapDetails = details,
+                            onLongPress: () {
+                              if (_tapDetails != null) {
+                                _showContextMenu(
+                                  context,
+                                  _tapDetails!,
+                                  message,
+                                );
+                              }
+                            },
+                            child: _MessageRow(
+                              message: message,
+                              isMine: isMine,
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  }
+                  },
+                ),
 
-                  final list = messages ?? const <MessageEntity>[];
-
-                  return ListView.builder(
-                    controller: scrollController,
-                    physics: listPhysics,
-                    reverse: true,
-                    padding: EdgeInsets.only(
-                      left: 12.w,
-                      right: 12.w,
-                      top: listTopPad,
-                      bottom: inputBlockHeight + 12.h,
-                    ),
-                    itemCount: list.length,
-                    itemBuilder: (context, index) {
-                      final message = list[index];
-                      final isMine =
-                          currentUid != null && message.senderId == currentUid;
-
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 8.h),
-                        child: _MessageRow(
-                          message: message,
-                          isMine: isMine,
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-
-              ValueListenableBuilder<double>(
-                valueListenable: _sheetExtent,
-                builder: (context, ext, _) {
-                  final showFooter = isChatTab ||
-                      ext > AppConst.sheetShowInputThreshold;
-                  return Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: inputBlockHeight + 24.h,
-                    child: IgnorePointer(
-                      ignoring: !showFooter,
-                      child: Opacity(
-                        opacity: showFooter ? 1 : 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                AppColors.background.withValues(alpha: 0.95),
-                                AppColors.background.withValues(alpha: 0.75),
-                                AppColors.background.withValues(alpha: 0.35),
-                                AppColors.background.withValues(alpha: 0.0),
-                              ],
-                              stops: const [0.0, 0.35, 0.7, 1.0],
+                ValueListenableBuilder<double>(
+                  valueListenable: _sheetExtent,
+                  builder: (context, ext, _) {
+                    final showFooter =
+                        isChatTab || ext > AppConst.sheetShowInputThreshold;
+                    return Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: inputBlockHeight + 24.h,
+                      child: IgnorePointer(
+                        ignoring: !showFooter,
+                        child: Opacity(
+                          opacity: showFooter ? 1 : 0,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  AppColors.background.withValues(alpha: 0.95),
+                                  AppColors.background.withValues(alpha: 0.75),
+                                  AppColors.background.withValues(alpha: 0.35),
+                                  AppColors.background.withValues(alpha: 0.0),
+                                ],
+                                stops: const [0.0, 0.35, 0.7, 1.0],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
 
-              ValueListenableBuilder<double>(
-                valueListenable: _sheetExtent,
-                builder: (context, ext, _) {
-                  final showFooter = isChatTab ||
-                      ext > AppConst.sheetShowInputThreshold;
-                  return Positioned(
-                    left: inputSidePadding,
-                    right: inputSidePadding,
-                    bottom: inputBottomOffset,
-                    child: IgnorePointer(
-                      ignoring: !showFooter,
-                      child: Opacity(
-                        opacity: showFooter ? 1 : 0,
-                        child: Container(
-                          height: inputHeight,
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundItemColor,
-                            borderRadius: BorderRadius.circular(24.r),
-                            border: Border.all(
-                              color: AppColors.borderColor,
-                              width: 2,
+                ValueListenableBuilder<double>(
+                  valueListenable: _sheetExtent,
+                  builder: (context, ext, _) {
+                    final showFooter =
+                        isChatTab || ext > AppConst.sheetShowInputThreshold;
+                    return Positioned(
+                      left: inputSidePadding,
+                      right: inputSidePadding,
+                      bottom: inputBottomOffset,
+                      child: IgnorePointer(
+                        ignoring: !showFooter,
+                        child: Opacity(
+                          opacity: showFooter ? 1 : 0,
+                          child: Container(
+                            height: inputHeight,
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundItemColor,
+                              borderRadius: BorderRadius.circular(24.r),
+                              border: Border.all(
+                                color: AppColors.borderColor,
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(width: 12.w),
-                              Icon(
-                                Icons.message,
-                                color: AppColors.upcomingMessageText,
-                                size: 20.sp,
-                              ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: TextField(
-                                  controller: _messageController,
-                                  style: TextStyle(
-                                    color: AppColors.text,
-                                    fontSize: 16.sp,
-                                  ),
-                                  minLines: 1,
-                                  maxLines: 4,
-                                  textInputAction: TextInputAction.send,
-                                  onSubmitted: (_) => _sendMessage(),
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: 'Message',
-                                    hintStyle: TextStyle(
-                                      color: AppColors.upcomingMessageText,
-                                      fontSize: 16.sp,
-                                    ),
-                                    isCollapsed: true,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: _sendMessage,
-                                icon: Icon(
-                                  Icons.send,
+                            child: Row(
+                              children: [
+                                SizedBox(width: 12.w),
+                                Icon(
+                                  Icons.message,
                                   color: AppColors.upcomingMessageText,
                                   size: 20.sp,
                                 ),
-                              ),
-                            ],
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _messageController,
+                                    style: TextStyle(
+                                      color: AppColors.text,
+                                      fontSize: 16.sp,
+                                    ),
+                                    minLines: 1,
+                                    maxLines: 4,
+                                    textInputAction: TextInputAction.send,
+                                    onSubmitted: (_) => _sendMessage(),
+                                    decoration: InputDecoration(
+                                      border: InputBorder.none,
+                                      hintText: 'Message',
+                                      hintStyle: TextStyle(
+                                        color: AppColors.upcomingMessageText,
+                                        fontSize: 16.sp,
+                                      ),
+                                      isCollapsed: true,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: _sendMessage,
+                                  icon: Icon(
+                                    Icons.send,
+                                    color: AppColors.upcomingMessageText,
+                                    size: 20.sp,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
 
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: isChatTab
-                    ? IgnorePointer(
-                        child: _SheetDragHandle(
-                          height: sheetTopHandleHeight.h,
-                          lottieController: _lottieController,
-                          onLottieLoaded: _startAnimationLoop,
-                        ),
-                      )
-                    : GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onVerticalDragUpdate: (d) {
-                          final c = widget._draggableScrollableController;
-                          if (!c.isAttached) return;
-                          final h = MediaQuery.sizeOf(context).height;
-                          if (h <= 0) return;
-                          final next = (c.size - d.primaryDelta! / h).clamp(
-                            AppConst.boardMinChildSize,
-                            AppConst.boardPeekChildSize,
-                          );
-                          c.jumpTo(next);
-                        },
-                        child: Material(
-                          color: Colors.transparent,
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: isChatTab
+                      ? IgnorePointer(
                           child: _SheetDragHandle(
                             height: sheetTopHandleHeight.h,
                             lottieController: _lottieController,
                             onLottieLoaded: _startAnimationLoop,
                           ),
+                        )
+                      : GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onVerticalDragUpdate: (d) {
+                            final c = widget._draggableScrollableController;
+                            if (!c.isAttached) return;
+                            final h = MediaQuery.sizeOf(context).height;
+                            if (h <= 0) return;
+                            final next = (c.size - d.primaryDelta! / h).clamp(
+                              AppConst.boardMinChildSize,
+                              AppConst.boardPeekChildSize,
+                            );
+                            c.jumpTo(next);
+                          },
+                          child: Material(
+                            color: Colors.transparent,
+                            child: _SheetDragHandle(
+                              height: sheetTopHandleHeight.h,
+                              lottieController: _lottieController,
+                              onLottieLoaded: _startAnimationLoop,
+                            ),
+                          ),
                         ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      );
+        );
       },
     );
   }
@@ -429,10 +512,7 @@ class _SheetDragHandle extends StatelessWidget {
 }
 
 class _LetterAvatar extends StatelessWidget {
-  const _LetterAvatar({
-    required this.userId,
-    required this.letter,
-  });
+  const _LetterAvatar({required this.userId, required this.letter});
 
   final String userId;
   final String letter;
@@ -463,10 +543,7 @@ class _LetterAvatar extends StatelessWidget {
 }
 
 class _MessageRow extends StatelessWidget {
-  const _MessageRow({
-    required this.message,
-    required this.isMine,
-  });
+  const _MessageRow({required this.message, required this.isMine});
 
   final MessageEntity message;
   final bool isMine;
@@ -484,10 +561,7 @@ class _MessageRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: bubbleColor,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: AppColors.borderColor,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderColor, width: 1),
       ),
       child: Text(
         message.content,
@@ -509,8 +583,9 @@ class _MessageRow extends StatelessWidget {
       crossAxisAlignment: align,
       children: [
         Row(
-          mainAxisAlignment:
-              isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: isMine
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: isMine
               ? [bubble, SizedBox(width: 8.w), avatar]

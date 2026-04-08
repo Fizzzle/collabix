@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:collabix/features/conversation/screens/chat/data/model/message_model.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/entity/message_entity.dart';
+import 'package:collabix/features/conversation/screens/chat/domain/usecase/delete_message_use_case.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/fetch_messages_by_chat.dart';
 import 'package:collabix/features/conversation/screens/chat/domain/usecase/send_message_use_case.dart';
 import 'package:meta/meta.dart';
@@ -13,13 +14,17 @@ part 'chat_state.dart';
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final SendMessageUseCase _sendMessage;
   final FetchMessagesByChatUseCase _fetchMessages;
+  final DeleteMessageUseCase _deleteMessage;
+
   StreamSubscription<List<MessageModel>>? _streamSubscription;
 
-  ChatBloc(this._sendMessage, this._fetchMessages) : super(ChatInitial()) {
+  ChatBloc(this._sendMessage, this._fetchMessages, this._deleteMessage)
+    : super(ChatInitial()) {
     on<FetchMessagesByChatEvent>(_onFetchMessagesByChat);
     on<SendMessageEvent>(_onSendMessage);
     on<ChatMessagesSnapshotEvent>(_onMessagesSnapshot);
     on<ChatMessagesStreamErrorEvent>(_onMessagesStreamError);
+    on<DeleteMessageEvent>(_onDeleteMessage);
   }
 
   void _onMessagesSnapshot(
@@ -36,6 +41,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatFailure(event.message));
   }
 
+  void _onDeleteMessage(
+    DeleteMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _deleteMessage.call(event.chatId, event.messageId);
+      if (!isClosed) {
+        add(
+          DeleteMessageEvent(chatId: event.chatId, messageId: event.messageId),
+        );
+      }
+    } catch (e) {
+      if (isClosed) return;
+      emit(ChatFailure(e.toString()));
+    }
+  }
+
   Future<void> _onFetchMessagesByChat(
     FetchMessagesByChatEvent event,
     Emitter<ChatState> emit,
@@ -43,18 +65,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoading());
     await _streamSubscription?.cancel();
 
-    _streamSubscription = _fetchMessages.call(event.chatId).listen(
-      (messages) {
-        if (!isClosed) {
-          add(ChatMessagesSnapshotEvent(messages));
-        }
-      },
-      onError: (Object e, StackTrace _) {
-        if (!isClosed) {
-          add(ChatMessagesStreamErrorEvent(e.toString()));
-        }
-      },
-    );
+    _streamSubscription = _fetchMessages
+        .call(event.chatId)
+        .listen(
+          (messages) {
+            if (!isClosed) {
+              add(ChatMessagesSnapshotEvent(messages));
+            }
+          },
+          onError: (Object e, StackTrace _) {
+            if (!isClosed) {
+              add(ChatMessagesStreamErrorEvent(e.toString()));
+            }
+          },
+        );
   }
 
   Future<void> _onSendMessage(

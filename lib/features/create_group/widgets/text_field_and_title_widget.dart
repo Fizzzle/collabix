@@ -1,5 +1,6 @@
 import 'package:collabix/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TextFieldAndTitleWidget extends StatelessWidget {
@@ -37,6 +38,9 @@ class TextFieldAndTitleWidget extends StatelessWidget {
           ),
         ),
         TextFormField(
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Zа-яА-ЯёЁ ]')),
+          ],
           controller: controller,
           keyboardType: TextInputType.text,
           autocorrect: true,

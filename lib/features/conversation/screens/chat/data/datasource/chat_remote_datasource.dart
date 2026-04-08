@@ -5,6 +5,7 @@ import 'package:collabix/features/conversation/screens/chat/domain/entity/messag
 abstract class ChatRemoteDataSource {
   Future<void> sendMessage(MessageModel message);
   Future<List<MessageEntity>> getMessages(String chatId);
+  Future<void> deleteMessage(String chatId,String messageId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -27,10 +28,10 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       'lastMessageAt': FieldValue.serverTimestamp(),
     };
 
-    await firestore.collection('Groups').doc(message.chatId).set(
-      preview,
-      SetOptions(merge: true),
-    );
+    await firestore
+        .collection('Groups')
+        .doc(message.chatId)
+        .set(preview, SetOptions(merge: true));
 
     await firestore
         .collection('users')
@@ -48,5 +49,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         .collection('messages')
         .get();
     return messages.docs.map((e) => MessageModel.fromJson(e.data())).toList();
+  }
+
+  @override
+  Future<void> deleteMessage(String chatId, String messageId) async {
+    final selectedMessage = await firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
   }
 }

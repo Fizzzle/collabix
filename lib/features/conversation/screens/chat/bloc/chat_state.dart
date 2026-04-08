@@ -17,3 +17,5 @@ class ChatFailure extends ChatState {
   final String message;
   ChatFailure(this.message);
 }
+
+class ChatMessageDeleted extends ChatState {}

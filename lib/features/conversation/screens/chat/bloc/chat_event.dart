@@ -26,3 +26,10 @@ final class ChatMessagesStreamErrorEvent extends ChatEvent {
 
   final String message;
 }
+
+final class DeleteMessageEvent extends ChatEvent {
+  DeleteMessageEvent({required this.chatId, required this.messageId});
+  final String chatId; 
+  final String messageId;
+
+}

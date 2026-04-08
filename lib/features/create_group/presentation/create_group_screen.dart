@@ -223,10 +223,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 }
 
 class _PrivatePublicSelectorWidget extends StatefulWidget {
-  final bool? isPrivate;
   final ValueChanged<bool>? onChanged;
 
-  const _PrivatePublicSelectorWidget({this.isPrivate, this.onChanged});
+  const _PrivatePublicSelectorWidget({this.onChanged});
 
   @override
   State<_PrivatePublicSelectorWidget> createState() =>
@@ -240,7 +239,7 @@ class _PrivatePublicSelectorWidgetState
   @override
   void initState() {
     super.initState();
-    isPrivate = widget.isPrivate ?? true;
+    isPrivate = true;
   }
 
   void _toggle(bool value) {
